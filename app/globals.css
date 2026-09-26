@@ -6,30 +6,76 @@
   html {
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   
   body {
-    @apply bg-slate-50 text-slate-900 font-sans selection:bg-brand-500 selection:text-white;
+    background-color: #FAF8F5;
+    color: #111827;
+  }
+
+  h1, h2, h3, h4 {
+    letter-spacing: -0.02em;
   }
 }
 
-/* Custom scrollbars */
+/* Luxury Gold & Metallic text gradient */
+.text-gold-gradient {
+  background: linear-gradient(135deg, #caa355 0%, #ecd497 45%, #b68b3d 85%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.bg-gold-gradient {
+  background: linear-gradient(135deg, #b8924c 0%, #ddcaa1 50%, #9c722f 100%);
+}
+
+.gold-border-glow {
+  box-shadow: 0 0 0 1px rgba(184, 146, 76, 0.25), 0 8px 24px -4px rgba(184, 146, 76, 0.15);
+}
+
+/* Subtle book spine edge effect */
+.book-spine-sheen {
+  position: relative;
+}
+.book-spine-sheen::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 5px;
+  background: linear-gradient(to right, rgba(255,255,255,0.45), rgba(255,255,255,0) 80%);
+  pointer-events: none;
+}
+.book-spine-sheen::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 4px;
+  width: 1px;
+  background: rgba(0,0,0,0.15);
+  pointer-events: none;
+}
+
+/* Custom refined scrollbars */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #f4efe6;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #d5c8b5;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #b8a287;
 }
 
 .no-scrollbar::-webkit-scrollbar {

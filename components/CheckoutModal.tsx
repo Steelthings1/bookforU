@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useCart } from '@/context/CartContext';
-import { X, ShieldCheck, CheckCircle2, Download, CreditCard, Lock, ArrowLeft, Sparkles, BookOpen } from 'lucide-react';
+import { X, ShieldCheck, CheckCircle2, Download, CreditCard, Lock, Sparkles, Feather } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export const CheckoutModal: React.FC = () => {
@@ -41,17 +41,15 @@ export const CheckoutModal: React.FC = () => {
     e.preventDefault();
     setIsProcessing(true);
 
-    // Simulate payment processing
     setTimeout(() => {
       setIsProcessing(false);
       setStep('success');
       setOrderId(`BFU-${Math.floor(100000 + Math.random() * 900000)}`);
       
-      // Fire confetti celebration
       try {
         confetti({
-          particleCount: 80,
-          spread: 70,
+          particleCount: 90,
+          spread: 80,
           origin: { y: 0.6 }
         });
       } catch {
@@ -63,20 +61,19 @@ export const CheckoutModal: React.FC = () => {
   };
 
   const handleDownloadMockFile = (bookTitle: string, format: string) => {
-    // Generate a downloadable text file representing the purchased e-book license
     const content = `=======================================================
-BOOKFORU DIGITAL LICENSE & E-BOOK DOWNLOAD RECEIPT
+BOOKFORU PRIVATE DIGITAL EDITION & RECEIPT
 =======================================================
 Title: ${bookTitle}
 Format: ${format}
 Order Reference: ${orderId || 'BFU-PREVIEW'}
-Customer: ${fullName || 'Valued Reader'} (${email || 'customer@bookforu.com'})
+Acquired By: ${fullName || 'Valued Reader'} (${email || 'reader@bookforu.com'})
 Delivery Time: ${new Date().toLocaleString()}
-DRM Policy: 100% DRM-Free Personal License
+DRM Policy: 100% DRM-Free Personal Lifetime License
 
-Thank you for purchasing on bookforU!
-You can read this on your Kindle, iPad, Apple Books, Kobo, or Android device.
-For questions or Kindle transfer support, visit https://bookforu.vercel.app/#faq
+Thank you for acquiring this work on bookforU.
+Compatible with Amazon Kindle, Apple Books, Kobo, Android, and PC.
+Assistance & device transfers: https://bookforu-mu.vercel.app/#faq
 =======================================================`;
 
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
@@ -94,14 +91,14 @@ For questions or Kindle transfer support, visit https://bookforu.vercel.app/#faq
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Secure Checkout"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200"
+      aria-label="Secure Acquisition Checkout"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200"
       onClick={() => {
         if (!isProcessing) setIsCheckoutOpen(false);
       }}
     >
       <div
-        className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden my-auto border border-slate-200 relative"
+        className="w-full max-w-2xl bg-[#FAF8F5] rounded-3xl shadow-2xl overflow-hidden my-auto border border-[#E0D5C3] relative"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
@@ -109,64 +106,64 @@ For questions or Kindle transfer support, visit https://bookforu.vercel.app/#faq
           <button
             onClick={() => setIsCheckoutOpen(false)}
             aria-label="Close checkout"
-            className="absolute top-5 right-5 p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 transition-colors z-20"
+            className="absolute top-5 right-5 p-2 rounded-full bg-[#EFE7D8] hover:bg-[#E2D6C1] text-[#4F4638] transition-colors z-20"
           >
             <X className="w-5 h-5" />
           </button>
         )}
 
         {step === 'details' ? (
-          <div className="p-6 sm:p-8 space-y-6">
+          <div className="p-6 sm:p-10 space-y-6">
             
             {/* Header */}
             <div>
-              <div className="flex items-center gap-2 text-xs font-bold text-brand-600 uppercase tracking-wider mb-1">
-                <Lock className="w-3.5 h-3.5" />
-                <span>256-Bit SSL Encrypted Checkout</span>
+              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#8C682D] mb-1.5">
+                <Lock className="w-3.5 h-3.5 text-[#B8924C]" />
+                <span>256-Bit SSL Encrypted Atelier</span>
               </div>
-              <h2 className="text-2xl font-black text-slate-900">Complete Your Order</h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Instant delivery. Download links available immediately after payment.
+              <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#141924]">Complete Your Acquisition</h2>
+              <p className="text-xs text-[#7A6F5E] mt-1">
+                Immediate file delivery and persistent lifetime access to your personal digital library.
               </p>
             </div>
 
             {/* Order Items Preview */}
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
-              <span className="text-xs font-bold text-slate-700 block">Order Summary:</span>
-              <div className="max-h-36 overflow-y-auto space-y-2 pr-1">
+            <div className="p-5 rounded-2xl bg-white border border-[#E4DAC8] space-y-3 shadow-sm">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#5C5346] block">Summary of Volumes:</span>
+              <div className="max-h-36 overflow-y-auto space-y-2.5 pr-1">
                 {purchasedItems.map((item) => (
                   <div key={`${item.book.id}-${item.format}`} className="flex items-center justify-between text-xs">
                     <div className="truncate pr-2">
-                      <span className="font-semibold text-slate-800">{item.book.title}</span>
-                      <span className="text-[10px] text-brand-600 block">
+                      <span className="font-serif font-bold text-[#141924]">{item.book.title}</span>
+                      <span className="text-[10px] text-[#8C682D] block font-mono font-semibold">
                         {item.format} × {item.quantity}
                       </span>
                     </div>
-                    <span className="font-mono font-bold text-slate-900 shrink-0">
+                    <span className="font-serif font-bold text-[#141924] shrink-0">
                       ${(item.book.price * item.quantity).toFixed(2)}
                     </span>
                   </div>
                 ))}
               </div>
 
-              <div className="pt-2 border-t border-slate-200/80 flex items-baseline justify-between text-sm">
+              <div className="pt-3 border-t border-[#F0E9DC] flex items-baseline justify-between text-sm">
                 <div>
-                  <span className="font-bold text-slate-900">Total Due:</span>
+                  <span className="font-bold text-[#141924]">Total Investment:</span>
                   {discountAmount > 0 && (
-                    <span className="text-[11px] text-emerald-600 font-semibold block">
-                      (Includes 20% discount savings of ${discountAmount.toFixed(2)})
+                    <span className="text-[11px] text-[#8C682D] font-semibold block">
+                      (Includes 20% privilege savings of ${discountAmount.toFixed(2)})
                     </span>
                   )}
                 </div>
-                <span className="text-xl font-black text-brand-600 font-mono">${total.toFixed(2)}</span>
+                <span className="font-serif text-2xl font-black text-[#8A6324]">${total.toFixed(2)}</span>
               </div>
             </div>
 
             {/* Form */}
             <form onSubmit={handleSubmitOrder} className="space-y-4">
               
-              <div className="space-y-1">
-                <label htmlFor="customer-name" className="block text-xs font-bold text-slate-700">
+              <div className="space-y-1.5">
+                <label htmlFor="customer-name" className="block text-xs font-bold uppercase tracking-wider text-[#5C5346]">
                   Full Name
                 </label>
                 <input
@@ -176,14 +173,14 @@ For questions or Kindle transfer support, visit https://bookforu.vercel.app/#faq
                   autoComplete="name"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="e.g. Alex Robinson"
-                  className="w-full px-4 py-2.5 text-sm bg-white border border-slate-200 rounded-xl outline-none focus:border-brand-500 text-slate-800"
+                  placeholder="e.g. Julian Davenport"
+                  className="w-full px-4 py-2.5 text-xs bg-white border border-[#DDD2BE] rounded-xl outline-none focus:border-[#B8924C] text-[#141924]"
                 />
               </div>
 
-              <div className="space-y-1">
-                <label htmlFor="customer-email" className="block text-xs font-bold text-slate-700">
-                  Delivery Email Address <span className="text-slate-400 font-normal">(Receipt & download links sent here)</span>
+              <div className="space-y-1.5">
+                <label htmlFor="customer-email" className="block text-xs font-bold uppercase tracking-wider text-[#5C5346]">
+                  Delivery Email Address <span className="text-[#9C8F7E] font-normal lowercase">(files & receipt dispatched here)</span>
                 </label>
                 <input
                   id="customer-email"
@@ -193,23 +190,23 @@ For questions or Kindle transfer support, visit https://bookforu.vercel.app/#faq
                   autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="alex.robinson@example.com"
-                  className="w-full px-4 py-2.5 text-sm bg-white border border-slate-200 rounded-xl outline-none focus:border-brand-500 text-slate-800"
+                  placeholder="julian.davenport@example.com"
+                  className="w-full px-4 py-2.5 text-xs bg-white border border-[#DDD2BE] rounded-xl outline-none focus:border-[#B8924C] text-[#141924]"
                 />
               </div>
 
               {/* Payment details */}
               <div className="space-y-3 pt-2">
                 <div className="flex items-center justify-between">
-                  <label className="block text-xs font-bold text-slate-700">Payment Information</label>
-                  <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
-                    <ShieldCheck className="w-3.5 h-3.5" /> Simulated Test Gateway
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#5C5346]">Payment Details</label>
+                  <span className="text-[10px] font-bold text-[#8C682D] bg-[#FAF4E6] px-2 py-0.5 rounded border border-[#DFCCA7] flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3 text-[#B8924C]" /> Instant Sandbox Gateway
                   </span>
                 </div>
 
-                <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50 space-y-3">
+                <div className="p-4 rounded-2xl border border-[#DDD2BE] bg-white space-y-3">
                   <div className="relative">
-                    <CreditCard className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    <CreditCard className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8C7E6C] pointer-events-none" />
                     <input
                       type="text"
                       required
@@ -217,7 +214,7 @@ For questions or Kindle transfer support, visit https://bookforu.vercel.app/#faq
                       value={cardNumber}
                       onChange={(e) => setCardNumber(e.target.value)}
                       placeholder="Card number"
-                      className="w-full pl-10 pr-4 py-2 text-xs bg-white border border-slate-200 rounded-lg outline-none font-mono text-slate-800"
+                      className="w-full pl-10 pr-4 py-2 text-xs bg-[#FAF8F5] border border-[#E0D5C3] rounded-lg outline-none font-mono text-[#141924]"
                     />
                   </div>
 
@@ -229,7 +226,7 @@ For questions or Kindle transfer support, visit https://bookforu.vercel.app/#faq
                       value={cardExpiry}
                       onChange={(e) => setCardExpiry(e.target.value)}
                       placeholder="MM/YY"
-                      className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg outline-none font-mono text-slate-800"
+                      className="w-full px-3 py-2 text-xs bg-[#FAF8F5] border border-[#E0D5C3] rounded-lg outline-none font-mono text-[#141924]"
                     />
                     <input
                       type="text"
@@ -238,7 +235,7 @@ For questions or Kindle transfer support, visit https://bookforu.vercel.app/#faq
                       value={cardCvc}
                       onChange={(e) => setCardCvc(e.target.value)}
                       placeholder="CVC"
-                      className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg outline-none font-mono text-slate-800"
+                      className="w-full px-3 py-2 text-xs bg-[#FAF8F5] border border-[#E0D5C3] rounded-lg outline-none font-mono text-[#141924]"
                     />
                   </div>
                 </div>
@@ -248,70 +245,70 @@ For questions or Kindle transfer support, visit https://bookforu.vercel.app/#faq
               <button
                 type="submit"
                 disabled={isProcessing}
-                className="w-full py-4 rounded-2xl bg-brand-600 hover:bg-brand-700 disabled:bg-brand-400 text-white font-bold text-base shadow-xl shadow-brand-500/25 flex items-center justify-center gap-2 transition-all mt-4"
+                className="w-full py-4 rounded-xl bg-[#121620] hover:bg-[#1E2536] disabled:bg-slate-400 text-[#FAF6ED] font-bold text-xs uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 transition-all mt-4 border border-[#3A3326]"
               >
                 {isProcessing ? (
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Processing Secure Payment...</span>
+                    <div className="w-4 h-4 border-2 border-[#D4AF37] border-t-transparent rounded-full animate-spin"></div>
+                    <span>Securing Transaction & Licenses...</span>
                   </div>
                 ) : (
                   <>
-                    <Lock className="w-4 h-4" />
-                    <span>Pay ${total.toFixed(2)} & Get Instant Access</span>
+                    <Lock className="w-4 h-4 text-[#D4AF37]" />
+                    <span>Authorize Payment (${total.toFixed(2)}) & Access Library</span>
                   </>
                 )}
               </button>
 
-              <p className="text-[11px] text-center text-slate-400">
-                By purchasing, you agree to our 14-day refund guarantee and DRM-free license.
+              <p className="text-[11px] text-center text-[#8C7E6C]">
+                Backed by our 14-day unconditional refund policy and DRM-free license.
               </p>
             </form>
 
           </div>
         ) : (
           /* Confirmation & Instant Downloads View */
-          <div className="p-6 sm:p-10 space-y-6 text-center">
+          <div className="p-6 sm:p-12 space-y-6 text-center">
             
-            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
-              <CheckCircle2 className="w-10 h-10" />
+            <div className="w-16 h-16 rounded-full bg-[#FAF5E8] border border-[#E5D7B7] text-[#9C722F] flex items-center justify-center mx-auto shadow-inner">
+              <CheckCircle2 className="w-9 h-9" />
             </div>
 
             <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold mb-2">
-                <Sparkles className="w-3.5 h-3.5" /> Payment Successful
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FAF4E6] text-[#8C682D] text-xs font-bold border border-[#DFCCA7] mb-2">
+                <Sparkles className="w-3.5 h-3.5 text-[#B8924C]" /> Transaction Confirmed
               </div>
-              <h2 className="text-3xl font-black text-slate-900">Your E-Books Are Ready!</h2>
-              <p className="text-sm text-slate-600 max-w-md mx-auto mt-1">
-                Order <span className="font-mono font-bold text-slate-800">{orderId}</span> confirmed. A copy of your download receipt was sent to <strong className="text-slate-800">{email || 'your email'}</strong>.
+              <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#141924]">Your Library Is Ready</h2>
+              <p className="text-xs sm:text-sm text-[#5C5346] max-w-md mx-auto mt-1">
+                Order <span className="font-mono font-bold text-[#141924]">{orderId}</span> logged. Your permanent digital editions have been dispatched to <strong className="text-[#141924]">{email || 'your email'}</strong>.
               </p>
             </div>
 
             {/* Instant Download links */}
-            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 text-left space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                <Download className="w-4 h-4 text-brand-600" />
+            <div className="p-5 rounded-2xl bg-white border border-[#E0D5C3] text-left space-y-3 shadow-sm">
+              <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#5C5346] flex items-center gap-1.5">
+                <Download className="w-4 h-4 text-[#8C682D]" />
                 <span>Instant Digital Downloads:</span>
               </h4>
 
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {purchasedItems.map((item) => (
                   <div
                     key={`${item.book.id}-${item.format}`}
-                    className="p-3.5 rounded-xl bg-white border border-slate-200 flex items-center justify-between gap-3 shadow-sm hover:border-brand-300 transition-colors"
+                    className="p-4 rounded-xl bg-[#FAF8F5] border border-[#E4DAC8] flex items-center justify-between gap-3 hover:border-[#CCA862] transition-colors"
                   >
                     <div className="flex items-center gap-3 truncate">
                       <img
                         src={item.book.coverImage}
                         alt={item.book.title}
-                        className="w-10 h-14 object-cover rounded shadow-sm shrink-0"
+                        className="w-10 h-14 object-cover rounded shadow-book shrink-0"
                       />
                       <div className="truncate">
-                        <p className="text-xs font-bold text-slate-900 truncate">{item.book.title}</p>
-                        <p className="text-[11px] text-slate-500">
+                        <p className="font-serif text-xs font-bold text-[#141924] truncate">{item.book.title}</p>
+                        <p className="text-[11px] text-[#7A6F5E] font-serif italic">
                           {item.book.author} • {item.book.fileSizeMb} MB
                         </p>
-                        <span className="text-[10px] font-bold text-brand-600">
+                        <span className="text-[9px] font-bold uppercase text-[#8C682D] tracking-wider">
                           Format: {item.format}
                         </span>
                       </div>
@@ -320,16 +317,16 @@ For questions or Kindle transfer support, visit https://bookforu.vercel.app/#faq
                     <div className="flex items-center gap-2 shrink-0">
                       <button
                         onClick={() => handleDownloadMockFile(item.book.title, 'EPUB')}
-                        className="px-3 py-1.5 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-700 font-bold text-xs flex items-center gap-1.5 transition-colors border border-brand-200"
+                        className="px-3.5 py-1.5 rounded-lg bg-[#FAF4E6] hover:bg-[#F2E5CC] text-[#7A5A23] font-bold text-xs flex items-center gap-1.5 transition-colors border border-[#DFCCA7]"
                       >
                         <Download className="w-3.5 h-3.5" />
                         <span>EPUB</span>
                       </button>
                       <button
                         onClick={() => handleDownloadMockFile(item.book.title, 'PDF')}
-                        className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition-colors border border-slate-200"
+                        className="px-3.5 py-1.5 rounded-lg bg-[#121620] hover:bg-[#1E2536] text-[#FAF6ED] font-bold text-xs flex items-center gap-1.5 transition-colors"
                       >
-                        <Download className="w-3.5 h-3.5" />
+                        <Download className="w-3.5 h-3.5 text-[#D4AF37]" />
                         <span>PDF</span>
                       </button>
                     </div>
@@ -345,9 +342,9 @@ For questions or Kindle transfer support, visit https://bookforu.vercel.app/#faq
                   setStep('details');
                   setIsCheckoutOpen(false);
                 }}
-                className="w-full sm:w-auto px-6 py-3 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors flex items-center justify-center gap-2"
+                className="w-full sm:w-auto px-8 py-3 rounded-full bg-[#121620] hover:bg-[#1E2536] text-[#FAF6ED] font-bold text-xs uppercase tracking-wider transition-colors border border-[#3A3326]"
               >
-                <span>Continue Browsing Catalog</span>
+                <span>Return to Catalog</span>
               </button>
             </div>
 

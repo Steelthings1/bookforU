@@ -13,7 +13,6 @@ export default function HomePage() {
 
   const handleSelectCategory = (cat: string) => {
     setSelectedCategory(cat);
-    // Smooth scroll to catalog
     const catalogEl = document.getElementById('catalog');
     if (catalogEl) {
       catalogEl.scrollIntoView({ behavior: 'smooth' });
@@ -21,7 +20,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-slate-50 min-h-screen">
+    <div className="flex-1 flex flex-col bg-[#FAF8F5] min-h-screen">
       <Navbar
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
@@ -31,25 +30,25 @@ export default function HomePage() {
       <main className="flex-1">
         <Hero />
         
-        {/* Quick highlight bar */}
-        <section className="bg-slate-900 text-white py-6 border-y border-slate-800">
+        {/* Editorial Standards Counter Strip */}
+        <section className="bg-[#121620] text-white py-8 border-y border-[#292218] relative overflow-hidden">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
               <div>
-                <p className="text-2xl font-black text-amber-400">100%</p>
-                <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">DRM-Free Freedom</p>
+                <p className="font-serif text-3xl sm:text-4xl font-bold text-[#E5C378]">100%</p>
+                <p className="text-[10px] sm:text-xs text-[#A09380] uppercase tracking-[0.2em] font-bold mt-1">DRM-Free Permanence</p>
               </div>
               <div>
-                <p className="text-2xl font-black text-brand-400">45,000+</p>
-                <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Active Happy Readers</p>
+                <p className="font-serif text-3xl sm:text-4xl font-bold text-[#FAF6ED]">45,000+</p>
+                <p className="text-[10px] sm:text-xs text-[#A09380] uppercase tracking-[0.2em] font-bold mt-1">Discerning Readers</p>
               </div>
               <div>
-                <p className="text-2xl font-black text-emerald-400">0 Seconds</p>
-                <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Instant Download Delivery</p>
+                <p className="font-serif text-3xl sm:text-4xl font-bold text-[#E5C378]">Instant</p>
+                <p className="text-[10px] sm:text-xs text-[#A09380] uppercase tracking-[0.2em] font-bold mt-1">Zero-Wait File Delivery</p>
               </div>
               <div>
-                <p className="text-2xl font-black text-sky-400">4.9 / 5.0</p>
-                <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Average Reader Rating</p>
+                <p className="font-serif text-3xl sm:text-4xl font-bold text-[#FAF6ED]">4.9 / 5.0</p>
+                <p className="text-[10px] sm:text-xs text-[#A09380] uppercase tracking-[0.2em] font-bold mt-1">Critical Review Score</p>
               </div>
             </div>
           </div>

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useCart } from '@/context/CartContext';
-import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight, Tag, ShieldCheck } from 'lucide-react';
+import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight, Tag, ShieldCheck, Sparkles } from 'lucide-react';
 
 export const CartDrawer: React.FC = () => {
   const {
@@ -56,30 +56,30 @@ export const CartDrawer: React.FC = () => {
       role="dialog"
       aria-modal="true"
       aria-label="Shopping Cart Drawer"
-      className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 overflow-hidden bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={() => setIsCartOpen(false)}
     >
       <div className="fixed inset-y-0 right-0 flex max-w-full pl-10">
         <aside
-          className="w-screen max-w-md bg-white shadow-2xl flex flex-col border-l border-slate-200"
+          className="w-screen max-w-md bg-[#FAF8F5] shadow-2xl flex flex-col border-l border-[#E2D6C3]"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Drawer Header */}
-          <header className="p-6 border-b border-slate-200 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center">
-                <ShoppingBag className="w-5 h-5" />
+          <header className="p-6 border-b border-[#E8DFD1] flex items-center justify-between bg-white/70 backdrop-blur-md">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#121620] text-[#D4AF37] flex items-center justify-center border border-[#3A3326] shadow-sm">
+                <ShoppingBag className="w-4 h-4" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-slate-900">Your Reading Bag</h2>
-                <p className="text-xs text-slate-500">{cart.length} unique {cart.length === 1 ? 'title' : 'titles'}</p>
+                <h2 className="font-serif text-lg font-bold text-[#141924]">Your Reading Bag</h2>
+                <p className="text-xs text-[#7A6F5E]">{cart.length} {cart.length === 1 ? 'edition' : 'editions'} selected</p>
               </div>
             </div>
 
             <button
               onClick={() => setIsCartOpen(false)}
               aria-label="Close cart"
-              className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors"
+              className="p-2 text-[#7A6F5E] hover:text-[#141924] rounded-full hover:bg-[#EFE7D8] transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -88,79 +88,79 @@ export const CartDrawer: React.FC = () => {
           {/* Cart Items List */}
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             {cart.length === 0 ? (
-              <div className="text-center py-16 space-y-3">
-                <div className="w-16 h-16 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
-                  <ShoppingBag className="w-8 h-8" />
+              <div className="text-center py-20 space-y-3">
+                <div className="w-16 h-16 rounded-full bg-[#F0E9DC] text-[#9C8F7E] flex items-center justify-center mx-auto border border-[#E0D5C3]">
+                  <ShoppingBag className="w-7 h-7" />
                 </div>
-                <h3 className="text-base font-bold text-slate-800">Your bag is empty</h3>
-                <p className="text-xs text-slate-500 max-w-xs mx-auto">
-                  Browse our handpicked selection of top tech, fiction, and business e-books.
+                <h3 className="font-serif text-lg font-bold text-[#2A2318]">Your bag is empty</h3>
+                <p className="text-xs text-[#7A6F5E] max-w-xs mx-auto">
+                  Browse our curated editions of critical literature, essays, and technical monographs.
                 </p>
                 <button
                   onClick={() => setIsCartOpen(false)}
-                  className="mt-3 px-5 py-2.5 rounded-full bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs shadow-md transition-all"
+                  className="mt-3 px-6 py-2.5 rounded-full bg-[#121620] hover:bg-[#1E2536] text-[#FAF6ED] font-bold text-xs uppercase tracking-wider shadow-md transition-all"
                 >
-                  Explore Books
+                  Explore Works
                 </button>
               </div>
             ) : (
               cart.map((item) => (
                 <div
                   key={`${item.book.id}-${item.format}`}
-                  className="flex gap-4 p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-slate-300 transition-colors"
+                  className="flex gap-4 p-4 rounded-2xl bg-white border border-[#E4DAC8] shadow-sm hover:border-[#CCA862] transition-colors"
                 >
-                  {/* Thumbnail */}
+                  {/* Thumbnail with spine effect */}
                   <img
                     src={item.book.coverImage}
                     alt={item.book.title}
-                    className="w-16 h-22 object-cover rounded-lg shadow-sm shrink-0 border border-slate-200"
+                    className="w-16 h-22 object-cover rounded-lg shadow-book shrink-0 border border-black/10"
                   />
 
                   {/* Details */}
                   <div className="flex-1 flex flex-col justify-between min-w-0">
                     <div>
                       <div className="flex items-start justify-between gap-1">
-                        <h4 className="text-xs font-bold text-slate-900 line-clamp-1">
+                        <h4 className="font-serif text-sm font-bold text-[#141924] line-clamp-1">
                           {item.book.title}
                         </h4>
                         <button
                           onClick={() => removeFromCart(item.book.id)}
                           aria-label="Remove item"
-                          className="text-slate-400 hover:text-rose-500 transition-colors shrink-0 p-0.5"
+                          className="text-[#9C8F7E] hover:text-rose-600 transition-colors shrink-0 p-0.5"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
 
-                      <p className="text-[11px] text-slate-500 line-clamp-1">{item.book.author}</p>
-                      <span className="inline-block mt-1 text-[10px] font-bold text-brand-600 bg-brand-50 px-2 py-0.5 rounded">
+                      <p className="text-xs text-[#7A6F5E] line-clamp-1 font-serif italic">By {item.book.author}</p>
+                      <span className="inline-block mt-1 text-[9px] font-black uppercase tracking-wider text-[#8C682D] bg-[#FAF4E6] px-2 py-0.5 rounded border border-[#DFCCA7]">
                         {item.format}
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-200/60">
+                    <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-[#F0E9DC]">
                       {/* Quantity Controller */}
-                      <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg p-0.5">
+                      <div className="flex items-center gap-1.5 bg-[#FAF8F5] border border-[#DDD2BE] rounded-lg p-0.5">
                         <button
                           onClick={() => updateQuantity(item.book.id, item.quantity - 1)}
                           aria-label="Decrease quantity"
-                          className="p-1 text-slate-500 hover:text-slate-800 rounded"
+                          className="p-1 text-[#5C5346] hover:text-black rounded"
                         >
                           <Minus className="w-3 h-3" />
                         </button>
-                        <span className="text-xs font-bold text-slate-800 px-1.5">
+                        <span className="text-xs font-bold text-[#141924] px-1.5">
                           {item.quantity}
                         </span>
                         <button
                           onClick={() => updateQuantity(item.book.id, item.quantity + 1)}
                           aria-label="Increase quantity"
-                          className="p-1 text-slate-500 hover:text-slate-800 rounded"
+                          className="p-1 text-[#5C5346] hover:text-black rounded"
                         >
                           <Plus className="w-3 h-3" />
                         </button>
                       </div>
 
-                      <span className="text-sm font-extrabold text-slate-900">
+                      <span className="font-serif text-base font-bold text-[#141924]">
                         ${(item.book.price * item.quantity).toFixed(2)}
                       </span>
                     </div>
@@ -173,19 +173,19 @@ export const CartDrawer: React.FC = () => {
 
           {/* Cart Footer & Checkout Summary */}
           {cart.length > 0 && (
-            <footer className="p-6 border-t border-slate-200 bg-slate-50 space-y-4">
+            <footer className="p-6 border-t border-[#E8DFD1] bg-white/80 space-y-4">
               
-              {/* Promo Code Input */}
+              {/* Promo Code Input with Gold Styling */}
               <div>
                 {promoCode ? (
-                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs">
-                    <div className="flex items-center gap-1.5 font-bold text-emerald-800">
-                      <Tag className="w-3.5 h-3.5" />
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-[#FAF5E8] border border-[#E5D7B7] text-xs">
+                    <div className="flex items-center gap-2 font-bold text-[#8C682D]">
+                      <Sparkles className="w-3.5 h-3.5 text-[#B8924C]" />
                       <span>Code &quot;{promoCode}&quot; Active (-20%)</span>
                     </div>
                     <button
                       onClick={removePromoCode}
-                      className="text-xs font-semibold text-emerald-700 hover:text-rose-600 underline"
+                      className="text-xs font-semibold text-[#8C682D] hover:text-rose-600 underline"
                     >
                       Remove
                     </button>
@@ -197,57 +197,57 @@ export const CartDrawer: React.FC = () => {
                       placeholder="Discount code (e.g. BOOKFORU20)"
                       value={inputCode}
                       onChange={(e) => setInputCode(e.target.value)}
-                      className="flex-1 px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl outline-none focus:border-brand-500 uppercase font-mono text-slate-800"
+                      className="flex-1 px-3.5 py-2 text-xs bg-[#FAF8F5] border border-[#DDD2BE] rounded-xl outline-none focus:border-[#B8924C] uppercase font-mono text-[#2A2318]"
                     />
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-colors"
+                      className="px-4 py-2 bg-[#121620] hover:bg-[#1E2536] text-[#FAF6ED] text-xs font-bold rounded-xl transition-colors uppercase tracking-wider"
                     >
                       Apply
                     </button>
                   </form>
                 )}
                 {feedback && !promoCode && (
-                  <p className={`text-[11px] mt-1.5 ${feedback.success ? 'text-emerald-600' : 'text-rose-500'}`}>
+                  <p className={`text-[11px] mt-1.5 ${feedback.success ? 'text-emerald-700' : 'text-rose-600'}`}>
                     {feedback.message}
                   </p>
                 )}
               </div>
 
               {/* Price Calculations */}
-              <div className="space-y-1.5 text-xs text-slate-600">
+              <div className="space-y-2 text-xs text-[#5C5346]">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
-                  <span className="font-semibold text-slate-900">${subtotal.toFixed(2)}</span>
+                  <span className="font-serif font-bold text-[#141924]">${subtotal.toFixed(2)}</span>
                 </div>
                 {discountAmount > 0 && (
-                  <div className="flex justify-between text-emerald-600 font-semibold">
-                    <span>Discount</span>
-                    <span>-${discountAmount.toFixed(2)}</span>
+                  <div className="flex justify-between text-[#8C682D] font-bold">
+                    <span>Privilege Savings (20%)</span>
+                    <span className="font-serif">-${discountAmount.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span>Digital Delivery / Tax</span>
-                  <span className="font-semibold text-emerald-600">FREE</span>
+                  <span>Digital Delivery / DRM License</span>
+                  <span className="font-bold text-[#8C682D]">COMPLIMENTARY</span>
                 </div>
-                <div className="flex justify-between text-sm font-black text-slate-900 pt-2 border-t border-slate-200">
-                  <span>Total Amount</span>
-                  <span className="text-base text-brand-600">${total.toFixed(2)}</span>
+                <div className="flex justify-between text-sm font-bold text-[#141924] pt-2.5 border-t border-[#E8DFD1]">
+                  <span>Total Investment</span>
+                  <span className="font-serif text-lg text-[#8A6324] font-black">${total.toFixed(2)}</span>
                 </div>
               </div>
 
               {/* Checkout Button */}
               <button
                 onClick={handleProceedCheckout}
-                className="w-full py-3.5 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-xl shadow-brand-500/25 flex items-center justify-center gap-2 hover:-translate-y-0.5 active:translate-y-0 transition-all"
+                className="w-full py-4 rounded-xl bg-[#121620] hover:bg-[#1E2536] text-[#FAF6ED] font-bold text-xs uppercase tracking-widest shadow-xl flex items-center justify-center gap-2.5 hover:-translate-y-0.5 active:translate-y-0 transition-all border border-[#3A3326]"
               >
-                <span>Proceed to Checkout</span>
-                <ArrowRight className="w-4 h-4" />
+                <span>Proceed to Secure Checkout</span>
+                <ArrowRight className="w-4 h-4 text-[#D4AF37]" />
               </button>
 
-              <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-500">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Instant DRM-Free Delivery • 256-bit Encrypted</span>
+              <div className="flex items-center justify-center gap-1.5 text-[11px] text-[#7A6F5E]">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#B8924C]" />
+                <span>Instant DRM-Free Delivery • 256-Bit SSL Encrypted</span>
               </div>
 
             </footer>

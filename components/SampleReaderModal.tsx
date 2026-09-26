@@ -2,14 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useCart } from '@/context/CartContext';
-import { X, Sun, Moon, Coffee, Type, ShoppingBag, BookOpen } from 'lucide-react';
+import { X, Sun, Moon, Coffee, Type, ShoppingBag, BookOpen, Feather } from 'lucide-react';
 
 export const SampleReaderModal: React.FC = () => {
   const { activeReaderBook, closeReader, addToCart } = useCart();
   const [theme, setTheme] = useState<'light' | 'sepia' | 'dark'>('sepia');
   const [fontSize, setFontSize] = useState<'sm' | 'base' | 'lg' | 'xl'>('lg');
 
-  // Handle ESC key dismiss
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') closeReader();
@@ -27,28 +26,28 @@ export const SampleReaderModal: React.FC = () => {
   if (!activeReaderBook) return null;
 
   const fontClasses = {
-    sm: 'text-sm leading-relaxed',
-    base: 'text-base leading-relaxed',
-    lg: 'text-lg leading-loose',
-    xl: 'text-xl leading-loose',
+    sm: 'text-sm leading-relaxed sm:leading-loose',
+    base: 'text-base leading-relaxed sm:leading-loose',
+    lg: 'text-lg leading-relaxed sm:leading-loose',
+    xl: 'text-xl leading-relaxed sm:leading-loose',
   };
 
   const themeClasses = {
-    light: 'bg-white text-slate-900 border-slate-200',
-    sepia: 'bg-[#f7f2e7] text-[#3c2f21] border-[#e7dcce]',
-    dark: 'bg-[#18181b] text-[#f4f4f5] border-[#27272a]',
+    light: 'bg-[#FCFBF9] text-[#1A1815] border-[#E8DFD1]',
+    sepia: 'bg-[#F5EFE3] text-[#2E2419] border-[#DFD4C0]',
+    dark: 'bg-[#10131A] text-[#EDE7DC] border-[#252B38]',
   };
 
   const toolbarClasses = {
-    light: 'bg-white/95 border-b border-slate-200 text-slate-700',
-    sepia: 'bg-[#f0e9dc]/95 border-b border-[#dfd2be] text-[#3c2f21]',
-    dark: 'bg-[#202023]/95 border-b border-[#2e2e33] text-[#f4f4f5]',
+    light: 'bg-[#FCFBF9]/95 border-b border-[#E8DFD1] text-[#2E2419]',
+    sepia: 'bg-[#EDE4D2]/95 border-b border-[#D8CABE] text-[#2E2419]',
+    dark: 'bg-[#161B24]/95 border-b border-[#252B38] text-[#EDE7DC]',
   };
 
   const footerClasses = {
-    light: 'bg-white/95 border-t border-slate-200',
-    sepia: 'bg-[#f0e9dc]/95 border-t border-[#dfd2be]',
-    dark: 'bg-[#202023]/95 border-t border-[#2e2e33]',
+    light: 'bg-[#FCFBF9]/95 border-t border-[#E8DFD1]',
+    sepia: 'bg-[#EDE4D2]/95 border-t border-[#D8CABE]',
+    dark: 'bg-[#161B24]/95 border-t border-[#252B38]',
   };
 
   return (
@@ -56,22 +55,22 @@ export const SampleReaderModal: React.FC = () => {
       role="dialog"
       aria-modal="true"
       aria-label={`Sample excerpt: ${activeReaderBook.title}`}
-      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-5 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
       onClick={closeReader}
     >
       <div
-        className={`w-full h-full sm:h-[92vh] sm:max-w-4xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden border ${themeClasses[theme]} transition-colors duration-300`}
+        className={`w-full h-full sm:h-[94vh] sm:max-w-4xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden border ${themeClasses[theme]} transition-colors duration-300 relative`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Reader Top Toolbar */}
         <header className={`px-6 py-4 flex items-center justify-between shrink-0 backdrop-blur-md ${toolbarClasses[theme]} transition-colors`}>
-          <div className="flex items-center gap-3 truncate pr-4">
-            <div className="w-8 h-8 rounded-lg bg-brand-600/10 text-brand-600 flex items-center justify-center shrink-0">
-              <BookOpen className="w-4 h-4" />
+          <div className="flex items-center gap-3.5 truncate pr-4">
+            <div className="w-8 h-8 rounded-lg bg-[#D4AF37]/20 border border-[#D4AF37]/40 text-[#9C722F] flex items-center justify-center shrink-0">
+              <Feather className="w-4 h-4" />
             </div>
             <div className="truncate">
-              <h2 className="text-sm font-bold truncate">{activeReaderBook.title}</h2>
-              <p className="text-xs opacity-70 truncate">{activeReaderBook.author}</p>
+              <h2 className="font-serif text-sm font-bold truncate">{activeReaderBook.title}</h2>
+              <p className="text-xs opacity-70 truncate font-serif italic">By {activeReaderBook.author}</p>
             </div>
           </div>
 
@@ -80,13 +79,13 @@ export const SampleReaderModal: React.FC = () => {
             
             {/* Font size picker */}
             <div className="hidden sm:flex items-center gap-1 p-1 bg-black/5 dark:bg-white/5 rounded-xl text-xs font-bold">
-              <span className="px-2 opacity-60 flex items-center gap-1"><Type className="w-3 h-3" /> Size:</span>
+              <span className="px-2 opacity-60 flex items-center gap-1 text-[11px]"><Type className="w-3 h-3" /> Size:</span>
               {(['sm', 'base', 'lg', 'xl'] as const).map((sz) => (
                 <button
                   key={sz}
                   onClick={() => setFontSize(sz)}
-                  className={`px-2.5 py-1 rounded-lg uppercase transition-all ${
-                    fontSize === sz ? 'bg-brand-600 text-white shadow' : 'opacity-70 hover:opacity-100'
+                  className={`px-2.5 py-1 rounded-lg uppercase transition-all text-[11px] ${
+                    fontSize === sz ? 'bg-[#121620] text-white shadow' : 'opacity-70 hover:opacity-100'
                   }`}
                 >
                   {sz === 'sm' ? 'S' : sz === 'base' ? 'M' : sz === 'lg' ? 'L' : 'XL'}
@@ -98,22 +97,22 @@ export const SampleReaderModal: React.FC = () => {
             <div className="flex items-center gap-1 p-1 bg-black/5 dark:bg-white/5 rounded-xl">
               <button
                 onClick={() => setTheme('light')}
-                title="White Light Theme"
-                className={`p-1.5 rounded-lg transition-all ${theme === 'light' ? 'bg-white shadow text-amber-500' : 'opacity-70'}`}
+                title="White Linen"
+                className={`p-1.5 rounded-lg transition-all ${theme === 'light' ? 'bg-white shadow text-[#B8924C]' : 'opacity-70'}`}
               >
                 <Sun className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setTheme('sepia')}
-                title="Warm Sepia Theme"
-                className={`p-1.5 rounded-lg transition-all ${theme === 'sepia' ? 'bg-[#dfd2be] shadow text-amber-900' : 'opacity-70'}`}
+                title="Warm Parchment"
+                className={`p-1.5 rounded-lg transition-all ${theme === 'sepia' ? 'bg-[#DFD4C0] shadow text-[#6E4B19]' : 'opacity-70'}`}
               >
                 <Coffee className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setTheme('dark')}
-                title="Night Dark Theme"
-                className={`p-1.5 rounded-lg transition-all ${theme === 'dark' ? 'bg-zinc-800 shadow text-sky-400' : 'opacity-70'}`}
+                title="Obsidian Night"
+                className={`p-1.5 rounded-lg transition-all ${theme === 'dark' ? 'bg-[#252B38] shadow text-[#D4AF37]' : 'opacity-70'}`}
               >
                 <Moon className="w-4 h-4" />
               </button>
@@ -131,40 +130,45 @@ export const SampleReaderModal: React.FC = () => {
         </header>
 
         {/* Reader Book Content Canvas */}
-        <main className="flex-1 overflow-y-auto px-6 sm:px-12 lg:px-20 py-10 max-w-3xl mx-auto w-full">
-          <div className="text-center mb-10 pb-6 border-b border-black/10 dark:border-white/10">
-            <span className="text-xs uppercase tracking-widest font-bold opacity-60">Free Sample Excerpt</span>
-            <h1 className="text-2xl sm:text-3xl font-serif font-bold mt-2 mb-1">
+        <main className="flex-1 overflow-y-auto px-6 sm:px-16 lg:px-24 py-12 max-w-3xl mx-auto w-full">
+          <div className="text-center mb-12 pb-8 border-b border-black/10 dark:border-white/10">
+            <span className="text-[10px] uppercase tracking-[0.25em] font-extrabold text-[#9C722F] block mb-2">
+              Complimentary Excerpt
+            </span>
+            <h1 className="font-serif text-2xl sm:text-4xl font-bold tracking-tight">
               {activeReaderBook.sampleExcerpt.chapterTitle}
             </h1>
-            <p className="text-xs opacity-70">From &ldquo;{activeReaderBook.title}&rdquo; by {activeReaderBook.author}</p>
+            <p className="text-xs opacity-60 mt-2 font-serif italic">From the digital edition of &ldquo;{activeReaderBook.title}&rdquo;</p>
           </div>
 
-          <article className={`space-y-6 font-serif ${fontClasses[fontSize]}`}>
+          <article className={`space-y-7 font-serif ${fontClasses[fontSize]}`}>
             {activeReaderBook.sampleExcerpt.paragraphs.map((para, index) => (
-              <p key={index} className="text-justify first-letter:text-3xl first-letter:font-bold first-letter:float-left first-letter:mr-2.5 first-letter:font-serif">
+              <p
+                key={index}
+                className="text-justify leading-relaxed sm:leading-loose first-letter:text-4xl first-letter:font-bold first-letter:float-left first-letter:mr-3 first-letter:font-serif first-letter:text-[#9C722F]"
+              >
                 {para}
               </p>
             ))}
           </article>
 
-          <div className="mt-14 pt-8 border-t border-black/10 dark:border-white/10 text-center space-y-3">
-            <p className="text-sm font-semibold opacity-80">
-              End of free preview chapter. The complete e-book includes all {activeReaderBook.pageCount} pages, appendix, and DRM-free files.
+          <div className="mt-16 pt-8 border-t border-black/10 dark:border-white/10 text-center space-y-2">
+            <p className="font-serif italic text-sm opacity-80">
+              End of Chapter Excerpt. The complete masterwork spans {activeReaderBook.pageCount} pages in DRM-free EPUB, PDF, and MOBI.
             </p>
           </div>
         </main>
 
-        {/* Reader Sticky Purchase Banner */}
+        {/* Reader Sticky Purchase Bar */}
         <footer className={`px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0 ${footerClasses[theme]} transition-colors`}>
           <div className="flex items-center gap-3">
-            <span className="text-xs sm:text-sm font-medium opacity-80">Keep reading now:</span>
-            <span className="text-xl font-black text-brand-600">${activeReaderBook.price.toFixed(2)}</span>
+            <span className="text-xs font-semibold uppercase tracking-wider opacity-75">Full Edition:</span>
+            <span className="font-serif text-2xl font-black text-[#8A6324]">${activeReaderBook.price.toFixed(2)}</span>
             {activeReaderBook.originalPrice && (
-              <span className="text-xs opacity-50 line-through">${activeReaderBook.originalPrice.toFixed(2)}</span>
+              <span className="text-xs opacity-50 line-through font-serif">${activeReaderBook.originalPrice.toFixed(2)}</span>
             )}
-            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
-              Instant Download
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#9C722F]/15 text-[#9C722F]">
+              DRM-Free
             </span>
           </div>
 
@@ -174,10 +178,10 @@ export const SampleReaderModal: React.FC = () => {
                 addToCart(activeReaderBook);
                 closeReader();
               }}
-              className="flex-1 sm:flex-initial px-6 py-2.5 rounded-full bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-lg shadow-brand-500/25 flex items-center justify-center gap-2 transition-all"
+              className="flex-1 sm:flex-initial px-7 py-3 rounded-full bg-[#121620] hover:bg-[#1E2536] text-[#FAF6ED] font-bold text-xs uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 transition-all border border-[#3A3326]"
             >
-              <ShoppingBag className="w-4 h-4" />
-              <span>Purchase Full E-Book (${activeReaderBook.price.toFixed(2)})</span>
+              <ShoppingBag className="w-3.5 h-3.5 text-[#D4AF37]" />
+              <span>Acquire Volume (${activeReaderBook.price.toFixed(2)})</span>
             </button>
           </div>
         </footer>
