@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { BOOKS, CATEGORIES } from '@/data/books';
+import { CATEGORIES } from '@/data/books';
 import { BookCard } from './BookCard';
 import { SlidersHorizontal, ArrowUpDown, SearchX, Sparkles } from 'lucide-react';
+import { useCart } from '@/context/CartContext';
 
 interface BookCatalogProps {
   searchQuery: string;
@@ -18,11 +19,12 @@ export const BookCatalog: React.FC<BookCatalogProps> = ({
   selectedCategory,
   setSelectedCategory,
 }) => {
+  const { books } = useCart();
   const [sortBy, setSortBy] = useState<'featured' | 'rating' | 'price-asc' | 'price-desc' | 'reviews'>('featured');
   const [selectedFormat, setSelectedFormat] = useState<string>('all');
 
   const filteredBooks = useMemo(() => {
-    return BOOKS.filter((book) => {
+    return books.filter((book) => {
       // Category filter
       if (selectedCategory !== 'All Books' && book.category !== selectedCategory) {
         return false;
@@ -66,7 +68,7 @@ export const BookCatalog: React.FC<BookCatalogProps> = ({
             Curated Digital Monographs & Masterworks
           </h2>
           <p className="text-sm text-[#7A6F5E] mt-2 font-normal">
-            Displaying {filteredBooks.length} of {BOOKS.length} DRM-free volumes available for instant ownership.
+            Displaying {filteredBooks.length} of {books.length} DRM-free volumes available for instant ownership.
           </p>
         </div>
 

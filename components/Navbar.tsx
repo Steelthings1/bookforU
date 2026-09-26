@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
-import { ShoppingBag, Heart, Search, Menu, X, Sparkles, Compass } from 'lucide-react';
+import { ShoppingBag, Heart, Search, Menu, X, Sparkles, Sliders } from 'lucide-react';
 
 interface NavbarProps {
   searchQuery: string;
@@ -17,11 +18,20 @@ export const Navbar: React.FC<NavbarProps> = ({ searchQuery, setSearchQuery, onS
   return (
     <header className="sticky top-0 z-40 bg-[#FAF8F5]/85 backdrop-blur-xl border-b border-[#E8DFD1]/80 transition-all duration-300">
       {/* Top Luxury Announcement Ribbon */}
-      <div className="bg-[#12161F] text-[#E5D7B7] text-xs py-2.5 px-4 text-center font-medium flex items-center justify-center gap-2.5 tracking-wider border-b border-[#2A241C]">
-        <Sparkles className="w-3.5 h-3.5 text-[#D4AF37] animate-pulse" />
-        <span className="text-[11px] sm:text-xs tracking-wide">
-          Curated Autumn Collection — Use code <strong className="text-[#F3E2B8] bg-white/10 px-2 py-0.5 rounded font-mono border border-[#D4AF37]/30 tracking-widest font-semibold">BOOKFORU20</strong> for 20% off all DRM-free editions
-        </span>
+      <div className="bg-[#12161F] text-[#E5D7B7] text-xs py-2 px-4 text-center font-medium flex items-center justify-between sm:justify-center gap-2.5 tracking-wider border-b border-[#2A241C]">
+        <div className="flex items-center justify-center gap-2 mx-auto">
+          <Sparkles className="w-3.5 h-3.5 text-[#D4AF37] animate-pulse" />
+          <span className="text-[11px] sm:text-xs tracking-wide">
+            Autumn Collection — Code <strong className="text-[#F3E2B8] bg-white/10 px-2 py-0.5 rounded font-mono border border-[#D4AF37]/30 tracking-widest font-semibold">BOOKFORU20</strong> for 20% off
+          </span>
+        </div>
+        <Link
+          href="/admin"
+          className="hidden md:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-purple-500/20 to-cyan-500/20 hover:from-purple-500/30 hover:to-cyan-500/30 text-cyan-300 border border-cyan-400/30 text-[10px] font-bold uppercase tracking-widest transition-all"
+        >
+          <span>Studio Admin</span>
+          <span>→</span>
+        </Link>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -73,6 +83,10 @@ export const Navbar: React.FC<NavbarProps> = ({ searchQuery, setSearchQuery, onS
             <button onClick={() => onSelectCategory('Sci-Fi & Fantasy')} className="hover:text-[#B8924C] transition-colors">Speculative</button>
             <button onClick={() => onSelectCategory('Business')} className="hover:text-[#B8924C] transition-colors">Monographs</button>
             <a href="#faq" className="hover:text-[#B8924C] transition-colors">Devices & FAQ</a>
+            <Link href="/admin" className="text-purple-600 hover:text-purple-800 font-black flex items-center gap-1 transition-colors">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Studio</span>
+            </Link>
           </nav>
 
           {/* Action buttons: Wishlist & Cart */}
@@ -172,6 +186,13 @@ export const Navbar: React.FC<NavbarProps> = ({ searchQuery, setSearchQuery, onS
             >
               Device Guides & Reader FAQ
             </a>
+            <Link
+              href="/admin"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block px-3 py-2 text-sm font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-xl"
+            >
+              ✨ Studio Admin (Add E-Books)
+            </Link>
           </div>
         )}
 

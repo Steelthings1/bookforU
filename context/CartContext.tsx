@@ -2,8 +2,13 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Book, CartItem } from '@/types/book';
+import { BOOKS } from '@/data/books';
 
 interface CartContextType {
+  books: Book[];
+  addBook: (newBook: Book) => void;
+  deleteBook: (bookId: string) => void;
+  resetToDefaultBooks: () => void;
   cart: CartItem[];
   wishlist: string[];
   addToCart: (book: Book, format?: 'EPUB' | 'PDF' | 'MOBI' | 'All-Formats Bundle') => void;
@@ -35,6 +40,7 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [books, setBooks] = useState<Book[]>(BOOKS);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [promoCode, setPromoCode] = useState<string>('');
@@ -49,6 +55,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     setIsMounted(true);
     try {
+      const savedBooks = localStorage.getItem('bookforu_catalog_books');
+      if (savedBooks) {
+        const parsed = JSON.parse(savedBooks);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setBooks(parsed);
+        }
+      }
+
       const savedCart = localStorage.getItem('bookforu_cart');
       if (savedCart) setCart(JSON.parse(savedCart));
 
@@ -63,12 +77,32 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (!isMounted) return;
     try {
+      localStorage.setItem('bookforu_catalog_books', JSON.stringify(books));
       localStorage.setItem('bookforu_cart', JSON.stringify(cart));
       localStorage.setItem('bookforu_wishlist', JSON.stringify(wishlist));
     } catch {
       // Ignore storage errors
     }
-  }, [cart, wishlist, isMounted]);
+  }, [books, cart, wishlist, isMounted]);
+
+  const addBook = (newBook: Book) => {
+    setBooks((prev) => [newBook, ...prev]);
+  };
+
+  const deleteBook = (bookId: string) => {
+    setBooks((prev) => prev.filter((b) => b.id !== bookId));
+    setCart((prev) => prev.filter((item) => item.book.id !== bookId));
+    setWishlist((prev) => prev.filter((id) => id !== bookId));
+  };
+
+  const resetToDefaultBooks = () => {
+    setBooks(BOOKS);
+    try {
+      localStorage.setItem('bookforu_catalog_books', JSON.stringify(BOOKS));
+    } catch {
+      // Ignore
+    }
+  };
 
   const addToCart = (book: Book, format: 'EPUB' | 'PDF' | 'MOBI' | 'All-Formats Bundle' = 'All-Formats Bundle') => {
     setCart((prev) => {
@@ -147,6 +181,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <CartContext.Provider
       value={{
+        books,
+        addBook,
+        deleteBook,
+        resetToDefaultBooks,
         cart,
         wishlist,
         addToCart,

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { Send, Sparkles, Shield, Heart } from 'lucide-react';
 
 export const Footer: React.FC = () => {
@@ -118,7 +119,14 @@ export const Footer: React.FC = () => {
               For orders, library synchronization, or publishing submissions:
             </p>
             <p className="text-[#FAF6ED] font-mono font-semibold">concierge@bookforu.com</p>
-            <p className="text-[11px] text-[#635A4E]">24/7 Global Digital Dispatch</p>
+            <div className="pt-2">
+              <Link
+                href="/admin"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-900/40 to-cyan-900/40 hover:from-purple-900/60 hover:to-cyan-900/60 text-cyan-300 border border-cyan-500/30 text-[11px] font-bold tracking-wider transition-all"
+              >
+                <span>⚡ Admin Studio (Add Books)</span>
+              </Link>
+            </div>
           </div>
 
         </div>
