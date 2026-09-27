@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/context/AuthContext';
 import { CATEGORIES } from '@/data/books';
 import { Book } from '@/types/book';
 import {
@@ -13,15 +14,23 @@ import {
   Trash2,
   BookOpen,
   DollarSign,
-  TrendingUp,
   ShieldCheck,
   CheckCircle,
   Eye,
   RefreshCw,
   Plus,
-  Image as ImageIcon,
   Tag,
   Feather,
+  Upload,
+  HardDrive,
+  Globe,
+  FileText,
+  Lock,
+  LogOut,
+  AlertCircle,
+  Key,
+  Check,
+  FileUp,
 } from 'lucide-react';
 
 const COVER_PRESETS = [
@@ -53,6 +62,11 @@ const COVER_PRESETS = [
 
 export default function AdminPage() {
   const { books, addBook, deleteBook, resetToDefaultBooks, openReader, openBookDetail } = useCart();
+  const { isAdminAuthenticated, verifyAdminPassword, adminSignOut } = useAuth();
+
+  // Password Gate State
+  const [adminKeyInput, setAdminKeyInput] = useState('');
+  const [gateError, setGateError] = useState<string | null>(null);
 
   // Form State for Manual E-Book Creation
   const [title, setTitle] = useState('');
@@ -69,15 +83,83 @@ export default function AdminPage() {
   const [fileSizeMb, setFileSizeMb] = useState('8.4');
   const [language, setLanguage] = useState('English');
   const [isbn, setIsbn] = useState('978-1-987000-00-1');
-  const [coverImage, setCoverImage] = useState(COVER_PRESETS[0].url);
   const [formats, setFormats] = useState<('EPUB' | 'PDF' | 'MOBI')[]>(['EPUB', 'PDF', 'MOBI']);
   const [synopsis, setSynopsis] = useState('');
   const [chapterTitle, setChapterTitle] = useState('Chapter 1: The First Principle');
   const [sampleParagraphs, setSampleParagraphs] = useState('');
 
+  // Cover Image Source Tabs & State
+  const [coverSourceTab, setCoverSourceTab] = useState<'pc_upload' | 'google_drive' | 'web_url'>('pc_upload');
+  const [coverImage, setCoverImage] = useState(COVER_PRESETS[0].url);
+  const [uploadedCoverFileName, setUploadedCoverFileName] = useState<string | null>(null);
+  const [driveCoverUrl, setDriveCoverUrl] = useState('');
+
+  // Digital Book File Source Tabs & State
+  const [fileSourceTab, setFileSourceTab] = useState<'pc_upload' | 'google_drive' | 'web_url'>('pc_upload');
+  const [uploadedBookFileName, setUploadedBookFileName] = useState<string | null>(null);
+  const [uploadedBookFileSizeMb, setUploadedBookFileSizeMb] = useState<number | null>(null);
+  const [driveBookUrl, setDriveBookUrl] = useState('');
+  const [webBookUrl, setWebBookUrl] = useState('');
+
   // UI State
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'create' | 'inventory'>('create');
+
+  const coverFileInputRef = useRef<HTMLInputElement>(null);
+  const bookFileInputRef = useRef<HTMLInputElement>(null);
+  const textExcerptInputRef = useRef<HTMLInputElement>(null);
+
+  // Helper to convert Google Drive sharing link to direct view URL
+  const convertGoogleDriveUrl = (url: string): string => {
+    const trimmed = url.trim();
+    const match = trimmed.match(/\/d\/([a-zA-Z0-9_-]+)/) || trimmed.match(/id=([a-zA-Z0-9_-]+)/);
+    if (match && match[1]) {
+      return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+    }
+    return trimmed;
+  };
+
+  // Handle Cover File Upload from PC
+  const handleCoverFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadedCoverFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = (uploadEvent) => {
+      const dataUrl = uploadEvent.target?.result as string;
+      if (dataUrl) {
+        setCoverImage(dataUrl);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Handle Digital Book File Upload from PC
+  const handleBookFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadedBookFileName(file.name);
+    const sizeMb = parseFloat((file.size / (1024 * 1024)).toFixed(2));
+    setUploadedBookFileSizeMb(sizeMb);
+    setFileSizeMb(sizeMb.toString());
+  };
+
+  // Handle Text Excerpt File Upload from PC
+  const handleTextExcerptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (text) {
+        setSampleParagraphs(text);
+      }
+    };
+    reader.readAsText(file);
+  };
 
   const toggleFormat = (fmt: 'EPUB' | 'PDF' | 'MOBI') => {
     if (formats.includes(fmt)) {
@@ -89,6 +171,17 @@ export default function AdminPage() {
     }
   };
 
+  // Admin Unlock Submit
+  const handleAdminUnlock = (e: React.FormEvent) => {
+    e.preventDefault();
+    setGateError(null);
+    const verified = verifyAdminPassword(adminKeyInput);
+    if (!verified) {
+      setGateError('Invalid administrator access key. Please verify and try again.');
+    }
+  };
+
+  // Manual Add Book Submit
   const handleManualAddBook = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -97,15 +190,21 @@ export default function AdminPage() {
       return;
     }
 
+    // Determine final cover image
+    let finalCover = coverImage;
+    if (coverSourceTab === 'google_drive' && driveCoverUrl.trim()) {
+      finalCover = convertGoogleDriveUrl(driveCoverUrl);
+    }
+
     const paragraphs = sampleParagraphs.trim()
       ? sampleParagraphs
           .split('\n\n')
           .map((p) => p.trim())
           .filter(Boolean)
       : [
-          `In this foundational chapter of "${title}", author ${author} explores the deep principles of ${category}. Every idea is meticulously constructed to challenge existing paradigms.`,
-          `As we examine the central framework, the distinction between theory and practical execution becomes vivid. Readers are invited to reflect on the core mechanics that govern this discipline.`,
-          `This digital edition includes the complete text, appendices, and high-fidelity figures formatted in DRM-free EPUB and PDF.`,
+          `In this foundational chapter of "${title}", author ${author} explores the core architecture of ${category}.`,
+          `Every concept is meticulously articulated to grant the reader clear theoretical clarity and applicable methodologies.`,
+          `This volume is presented in DRM-free universal formats for lifelong reading across all platforms.`,
         ];
 
     const slug = title
@@ -119,7 +218,8 @@ export default function AdminPage() {
       subtitle: subtitle.trim() || undefined,
       author: author.trim(),
       authorBio: authorBio.trim() || `Author and specialist in ${category}.`,
-      coverImage: coverImage.trim() || COVER_PRESETS[0].url,
+      coverImage: finalCover || COVER_PRESETS[0].url,
+      coverSource: coverSourceTab,
       category,
       rating: 5.0,
       reviewCount: 1,
@@ -139,13 +239,20 @@ export default function AdminPage() {
         chapterTitle: chapterTitle.trim() || 'Chapter 1: Foundations',
         paragraphs,
       },
+      digitalFile: {
+        source: fileSourceTab,
+        fileName: uploadedBookFileName || `${slug}.epub`,
+        fileSizeMb: uploadedBookFileSizeMb || parseFloat(fileSizeMb) || 5.0,
+        url: fileSourceTab === 'google_drive' ? driveBookUrl : fileSourceTab === 'web_url' ? webBookUrl : undefined,
+        uploadedAt: new Date().toISOString(),
+      },
       reviews: [
         {
           id: `rev-${Date.now()}`,
-          userName: 'Editorial Board Review',
+          userName: 'Editorial Curator Review',
           rating: 5,
           date: new Date().toISOString().split('T')[0],
-          comment: 'An extraordinary new addition to the digital catalog. Outstanding clarity and depth.',
+          comment: 'Masterful work added through the private atelier terminal. Impeccable presentation.',
           verifiedPurchase: true,
         },
       ],
@@ -154,18 +261,20 @@ export default function AdminPage() {
     addBook(newBook);
     setToastMessage(`✨ Volume "${newBook.title}" successfully added to the live catalog!`);
 
-    // Reset some inputs
+    // Reset fields
     setTitle('');
     setSubtitle('');
     setAuthor('');
     setAuthorBio('');
     setSynopsis('');
     setSampleParagraphs('');
+    setUploadedCoverFileName(null);
+    setUploadedBookFileName(null);
 
     // Switch to inventory tab
     setTimeout(() => {
       setActiveTab('inventory');
-    }, 1000);
+    }, 800);
 
     setTimeout(() => {
       setToastMessage(null);
@@ -176,8 +285,103 @@ export default function AdminPage() {
   const totalValue = books.reduce((acc, b) => acc + b.price, 0);
   const categoriesCount = new Set(books.map((b) => b.category)).size;
 
+  // ---------------------------------------------------------------------------
+  // IF NOT AUTHENTICATED: RENDER SECURE VIBRANT ADMIN GATE SCREEN
+  // ---------------------------------------------------------------------------
+  if (!isAdminAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#090D16] text-slate-100 flex flex-col justify-center items-center px-4 py-12 relative overflow-hidden">
+        {/* Background ambient glowing shapes */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-600/20 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute top-1/4 right-1/4 w-80 h-80 bg-cyan-500/15 rounded-full blur-[100px] pointer-events-none" />
+
+        <div className="w-full max-w-md bg-[#111726]/90 backdrop-blur-2xl p-8 sm:p-10 rounded-3xl border border-white/10 shadow-2xl relative z-10 space-y-6">
+          
+          <div className="text-center space-y-2">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-600 via-indigo-600 to-cyan-500 p-0.5 mx-auto shadow-lg shadow-purple-600/30">
+              <div className="w-full h-full bg-[#0D1220] rounded-[14px] flex items-center justify-center">
+                <Lock className="w-6 h-6 text-purple-400" />
+              </div>
+            </div>
+            <h1 className="font-serif text-2xl sm:text-3xl font-bold text-white pt-2">
+              book<span className="text-purple-400 italic font-normal">forU</span> Studio
+            </h1>
+            <p className="text-xs text-slate-400">
+              Restricted Terminal. Enter your Administrator Master Access Key to proceed.
+            </p>
+          </div>
+
+          {gateError && (
+            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-medium flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+              <span>{gateError}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleAdminUnlock} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
+                Master Access Key / Password
+              </label>
+              <div className="relative">
+                <Key className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-400 pointer-events-none" />
+                <input
+                  type="password"
+                  required
+                  value={adminKeyInput}
+                  onChange={(e) => setAdminKeyInput(e.target.value)}
+                  placeholder="Enter administrator password..."
+                  className="w-full pl-10 pr-4 py-3 text-xs bg-[#090D16] border border-white/10 rounded-xl outline-none focus:border-purple-500 text-white font-mono placeholder:text-slate-600"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white font-bold text-xs uppercase tracking-widest shadow-xl shadow-purple-600/25 flex items-center justify-center gap-2 transition-all"
+            >
+              <ShieldCheck className="w-4 h-4 text-yellow-300" />
+              <span>Authenticate & Enter Studio</span>
+            </button>
+          </form>
+
+          {/* Quick Demo Helper */}
+          <div className="pt-4 border-t border-white/10 space-y-2 text-center">
+            <span className="text-[10px] text-slate-400 uppercase tracking-wider block">
+              Default Master Key Hint:
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setAdminKeyInput('admin123');
+                setGateError(null);
+              }}
+              className="px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-purple-300 font-mono text-xs border border-purple-500/30 transition-all inline-block"
+            >
+              Use Default Key: <strong className="text-white">admin123</strong>
+            </button>
+          </div>
+
+          <div className="text-center pt-2">
+            <Link
+              href="/"
+              className="text-xs text-slate-400 hover:text-white transition-colors inline-flex items-center gap-1.5"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Return to Storefront</span>
+            </Link>
+          </div>
+
+        </div>
+      </div>
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // AUTHENTICATED: RENDER FULL STUDIO ADMIN PANEL
+  // ---------------------------------------------------------------------------
   return (
-    <div className="min-h-screen bg-[#0B0F19] text-slate-100 flex flex-col font-sans selection:bg-purple-600 selection:text-white">
+    <div className="min-h-screen bg-[#090D16] text-slate-100 flex flex-col font-sans selection:bg-purple-600 selection:text-white">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-6 right-6 z-50 bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-5 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 border border-emerald-400/30 animate-in slide-in-from-top-4 duration-300">
@@ -190,7 +394,7 @@ export default function AdminPage() {
       )}
 
       {/* Admin Vibrant Top Navbar */}
-      <header className="sticky top-0 z-40 bg-[#0B0F19]/90 backdrop-blur-xl border-b border-purple-500/20">
+      <header className="sticky top-0 z-40 bg-[#090D16]/90 backdrop-blur-xl border-b border-purple-500/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20 gap-4">
             
@@ -200,14 +404,14 @@ export default function AdminPage() {
                 className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-slate-300 hover:text-white border border-white/10 text-xs font-bold transition-all"
               >
                 <ArrowLeft className="w-4 h-4 text-purple-400" />
-                <span className="hidden sm:inline">Back to Storefront</span>
+                <span className="hidden sm:inline">Storefront</span>
               </Link>
 
               <div className="h-6 w-px bg-white/10 hidden sm:block" />
 
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 via-indigo-600 to-cyan-500 p-0.5 shadow-lg shadow-purple-500/20">
-                  <div className="w-full h-full bg-[#0B0F19] rounded-[10px] flex items-center justify-center">
+                  <div className="w-full h-full bg-[#090D16] rounded-[10px] flex items-center justify-center">
                     <Sparkles className="w-5 h-5 text-purple-400" />
                   </div>
                 </div>
@@ -221,35 +425,47 @@ export default function AdminPage() {
                     </span>
                   </div>
                   <span className="block text-[10px] text-slate-400 font-mono">
-                    Live Catalog Management & Real-Time Sync
+                    Protected Terminal • Live Store Sync Active
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Navigation tabs */}
-            <div className="flex items-center gap-2 bg-white/[0.04] p-1.5 rounded-2xl border border-white/10">
+            {/* Navigation tabs & Log Out */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 bg-white/[0.04] p-1.5 rounded-2xl border border-white/10">
+                <button
+                  onClick={() => setActiveTab('create')}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                    activeTab === 'create'
+                      ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-600/30'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <BookPlus className="w-3.5 h-3.5" />
+                  <span className="hidden md:inline">Manual Book Creator</span>
+                  <span className="md:hidden">Add</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('inventory')}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                    activeTab === 'inventory'
+                      ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-600/30'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>Inventory ({books.length})</span>
+                </button>
+              </div>
+
+              {/* Lock Terminal / Sign Out */}
               <button
-                onClick={() => setActiveTab('create')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-                  activeTab === 'create'
-                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-600/30'
-                    : 'text-slate-400 hover:text-white'
-                }`}
+                onClick={adminSignOut}
+                title="Lock Terminal & Log Out"
+                className="p-2.5 rounded-xl bg-white/[0.04] hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-white/10 transition-colors"
               >
-                <BookPlus className="w-3.5 h-3.5" />
-                <span>Manual Book Creator</span>
-              </button>
-              <button
-                onClick={() => setActiveTab('inventory')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-                  activeTab === 'inventory'
-                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-600/30'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <Layers className="w-3.5 h-3.5" />
-                <span>Inventory ({books.length})</span>
+                <LogOut className="w-4 h-4" />
               </button>
             </div>
 
@@ -278,7 +494,7 @@ export default function AdminPage() {
 
           <div className="relative overflow-hidden p-6 rounded-3xl bg-gradient-to-br from-emerald-950/40 via-[#13192B] to-[#0D1220] border border-emerald-500/25 shadow-xl">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-300">Est. Catalog Value</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-300">Est. Inventory Value</span>
               <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center">
                 <DollarSign className="w-4 h-4" />
               </div>
@@ -289,7 +505,7 @@ export default function AdminPage() {
 
           <div className="relative overflow-hidden p-6 rounded-3xl bg-gradient-to-br from-cyan-950/40 via-[#13192B] to-[#0D1220] border border-cyan-500/25 shadow-xl">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-cyan-300">Active Genres</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-cyan-300">Active Categories</span>
               <div className="w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-300 flex items-center justify-center">
                 <Tag className="w-4 h-4" />
               </div>
@@ -300,13 +516,13 @@ export default function AdminPage() {
 
           <div className="relative overflow-hidden p-6 rounded-3xl bg-gradient-to-br from-amber-950/40 via-[#13192B] to-[#0D1220] border border-amber-500/25 shadow-xl">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-amber-300">Protection Policy</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-300">Security Gate</span>
               <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center">
                 <ShieldCheck className="w-4 h-4" />
               </div>
             </div>
-            <p className="font-serif text-3xl font-black text-white mt-3">100% DRM-Free</p>
-            <p className="text-[11px] text-amber-200/70 mt-1">Universal format distribution</p>
+            <p className="font-serif text-3xl font-black text-white mt-3">Protected</p>
+            <p className="text-[11px] text-amber-200/70 mt-1">Session active</p>
           </div>
         </div>
 
@@ -315,20 +531,264 @@ export default function AdminPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
             
             {/* Form Section */}
-            <div className="lg:col-span-7 bg-[#111726]/80 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl space-y-6">
+            <div className="lg:col-span-7 bg-[#111726]/80 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl space-y-7">
               <div>
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-bold uppercase tracking-wider mb-2">
-                  <Plus className="w-3.5 h-3.5" /> Manual Publication Studio
+                  <Plus className="w-3.5 h-3.5" /> Manual Publication Atelier
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-serif font-bold text-white">Publish New E-Book Volume</h2>
                 <p className="text-xs text-slate-400 mt-1">
-                  Enter complete metadata, pricing, format distribution, and sample reading excerpt.
+                  Upload cover and digital files directly from your PC/system, attach Google Drive links, or specify web URLs.
                 </p>
               </div>
 
               <form onSubmit={handleManualAddBook} className="space-y-6">
                 
-                {/* Book Title & Subtitle */}
+                {/* 1. BOOK COVER UPLOAD OPTIONS (PC / Google Drive / URL) */}
+                <div className="p-5 rounded-2xl bg-white/[0.03] border border-purple-500/30 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-purple-300 uppercase tracking-wider flex items-center gap-2">
+                      <Upload className="w-4 h-4 text-purple-400" />
+                      <span>Book Cover Artwork (Upload / Drive / URL) *</span>
+                    </label>
+                  </div>
+
+                  {/* Cover Option Tabs */}
+                  <div className="grid grid-cols-3 gap-2 p-1 bg-[#090D16] rounded-xl text-xs font-bold border border-white/10">
+                    <button
+                      type="button"
+                      onClick={() => setCoverSourceTab('pc_upload')}
+                      className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                        coverSourceTab === 'pc_upload'
+                          ? 'bg-purple-600 text-white shadow'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <HardDrive className="w-3.5 h-3.5" />
+                      <span>From PC</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setCoverSourceTab('google_drive')}
+                      className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                        coverSourceTab === 'google_drive'
+                          ? 'bg-purple-600 text-white shadow'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <Globe className="w-3.5 h-3.5" />
+                      <span>Google Drive</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setCoverSourceTab('web_url')}
+                      className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                        coverSourceTab === 'web_url'
+                          ? 'bg-purple-600 text-white shadow'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Presets / URL</span>
+                    </button>
+                  </div>
+
+                  {/* Mode A: Upload Cover from PC */}
+                  {coverSourceTab === 'pc_upload' && (
+                    <div className="space-y-2">
+                      <input
+                        ref={coverFileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleCoverFileUpload}
+                        className="hidden"
+                      />
+                      <div
+                        onClick={() => coverFileInputRef.current?.click()}
+                        className="border-2 border-dashed border-purple-500/40 hover:border-purple-400 rounded-2xl p-6 text-center cursor-pointer bg-[#090D16]/50 hover:bg-[#090D16] transition-all space-y-2"
+                      >
+                        <Upload className="w-8 h-8 text-purple-400 mx-auto" />
+                        <p className="text-xs font-bold text-white">
+                          Click to select image file from your PC or drag & drop
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          Supports PNG, JPG, WebP. Converted automatically for instant offline & cloud display.
+                        </p>
+                        {uploadedCoverFileName && (
+                          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-mono font-bold mt-2 border border-emerald-500/30">
+                            <Check className="w-3.5 h-3.5" /> Selected: {uploadedCoverFileName}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Mode B: Google Drive Cover Link */}
+                  {coverSourceTab === 'google_drive' && (
+                    <div className="space-y-2">
+                      <input
+                        type="url"
+                        value={driveCoverUrl}
+                        onChange={(e) => {
+                          setDriveCoverUrl(e.target.value);
+                          if (e.target.value.trim()) {
+                            setCoverImage(convertGoogleDriveUrl(e.target.value));
+                          }
+                        }}
+                        placeholder="Paste Google Drive image share link (e.g. https://drive.google.com/file/d/...)"
+                        className="w-full px-4 py-2.5 text-xs bg-[#090D16] border border-white/10 rounded-xl outline-none focus:border-purple-500 text-white font-mono placeholder:text-slate-600"
+                      />
+                      <p className="text-[11px] text-slate-400">
+                        💡 Note: Ensure Google Drive sharing is set to &ldquo;Anyone with the link can view&rdquo;.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Mode C: Web URL & Curated Presets */}
+                  {coverSourceTab === 'web_url' && (
+                    <div className="space-y-2">
+                      <input
+                        type="url"
+                        value={coverImage}
+                        onChange={(e) => setCoverImage(e.target.value)}
+                        placeholder="https://images.unsplash.com/..."
+                        className="w-full px-4 py-2.5 text-xs bg-[#090D16] border border-white/10 rounded-xl outline-none focus:border-purple-500 text-white font-mono"
+                      />
+                      <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1 no-scrollbar">
+                        {COVER_PRESETS.map((preset, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setCoverImage(preset.url)}
+                            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold whitespace-nowrap transition-all border ${
+                              coverImage === preset.url
+                                ? 'bg-purple-600 text-white border-purple-500'
+                                : 'bg-white/[0.04] text-slate-400 border-white/10 hover:text-white'
+                            }`}
+                          >
+                            {preset.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. DIGITAL E-BOOK FILE UPLOAD (PC / Google Drive / URL) */}
+                <div className="p-5 rounded-2xl bg-white/[0.03] border border-cyan-500/30 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-2">
+                      <FileUp className="w-4 h-4 text-cyan-400" />
+                      <span>Digital E-Book File (EPUB, PDF, Document)</span>
+                    </label>
+                  </div>
+
+                  {/* Digital File Source Tabs */}
+                  <div className="grid grid-cols-3 gap-2 p-1 bg-[#090D16] rounded-xl text-xs font-bold border border-white/10">
+                    <button
+                      type="button"
+                      onClick={() => setFileSourceTab('pc_upload')}
+                      className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                        fileSourceTab === 'pc_upload'
+                          ? 'bg-cyan-600 text-white shadow'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <HardDrive className="w-3.5 h-3.5" />
+                      <span>From PC</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setFileSourceTab('google_drive')}
+                      className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                        fileSourceTab === 'google_drive'
+                          ? 'bg-cyan-600 text-white shadow'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <Globe className="w-3.5 h-3.5" />
+                      <span>Google Drive</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setFileSourceTab('web_url')}
+                      className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                        fileSourceTab === 'web_url'
+                          ? 'bg-cyan-600 text-white shadow'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Direct URL</span>
+                    </button>
+                  </div>
+
+                  {/* Option A: Upload File from PC */}
+                  {fileSourceTab === 'pc_upload' && (
+                    <div className="space-y-2">
+                      <input
+                        ref={bookFileInputRef}
+                        type="file"
+                        accept=".epub,.pdf,.mobi,.txt,.doc,.docx"
+                        onChange={handleBookFileUpload}
+                        className="hidden"
+                      />
+                      <div
+                        onClick={() => bookFileInputRef.current?.click()}
+                        className="border-2 border-dashed border-cyan-500/40 hover:border-cyan-400 rounded-2xl p-5 text-center cursor-pointer bg-[#090D16]/50 hover:bg-[#090D16] transition-all space-y-1.5"
+                      >
+                        <FileText className="w-8 h-8 text-cyan-400 mx-auto" />
+                        <p className="text-xs font-bold text-white">
+                          Select e-book file (.epub, .pdf, .mobi) from your system
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          Automatically calculates volume size and links to purchase receipts.
+                        </p>
+                        {uploadedBookFileName && (
+                          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 text-xs font-mono font-bold mt-2 border border-cyan-500/30">
+                            <Check className="w-3.5 h-3.5 text-cyan-400" />
+                            <span>{uploadedBookFileName} ({uploadedBookFileSizeMb} MB)</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Option B: Google Drive E-Book Share Link */}
+                  {fileSourceTab === 'google_drive' && (
+                    <div className="space-y-2">
+                      <input
+                        type="url"
+                        value={driveBookUrl}
+                        onChange={(e) => setDriveBookUrl(e.target.value)}
+                        placeholder="Google Drive sharing URL for the digital book file..."
+                        className="w-full px-4 py-2.5 text-xs bg-[#090D16] border border-white/10 rounded-xl outline-none focus:border-cyan-500 text-white font-mono placeholder:text-slate-600"
+                      />
+                      <p className="text-[11px] text-slate-400">
+                        Attached to instant download receipt so buyers can retrieve this file.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Option C: Direct Web URL */}
+                  {fileSourceTab === 'web_url' && (
+                    <div className="space-y-2">
+                      <input
+                        type="url"
+                        value={webBookUrl}
+                        onChange={(e) => setWebBookUrl(e.target.value)}
+                        placeholder="Direct download URL (e.g. S3, Dropbox, cloud storage)..."
+                        className="w-full px-4 py-2.5 text-xs bg-[#090D16] border border-white/10 rounded-xl outline-none focus:border-cyan-500 text-white font-mono placeholder:text-slate-600"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* 3. CORE BOOK METADATA */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5 sm:col-span-2">
                     <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
@@ -339,8 +799,8 @@ export default function AdminPage() {
                       required
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      placeholder="e.g. Neural Networks & Synthetic Realities"
-                      className="w-full px-4 py-3 text-xs bg-[#0B0F19] border border-white/10 rounded-xl outline-none focus:border-purple-500 text-white placeholder:text-slate-600 transition-colors"
+                      placeholder="e.g. Neural Networks & Cognitive Agents"
+                      className="w-full px-4 py-3 text-xs bg-[#090D16] border border-white/10 rounded-xl outline-none focus:border-purple-500 text-white placeholder:text-slate-600 transition-colors"
                     />
                   </div>
 
@@ -352,14 +812,11 @@ export default function AdminPage() {
                       type="text"
                       value={subtitle}
                       onChange={(e) => setSubtitle(e.target.value)}
-                      placeholder="e.g. Foundations of Generative Intelligence and Multimodal Agents"
-                      className="w-full px-4 py-2.5 text-xs bg-[#0B0F19] border border-white/10 rounded-xl outline-none focus:border-purple-500 text-white placeholder:text-slate-600"
+                      placeholder="e.g. Blueprint for Autonomous Intelligence"
+                      className="w-full px-4 py-2.5 text-xs bg-[#090D16] border border-white/10 rounded-xl outline-none focus:border-purple-500 text-white placeholder:text-slate-600"
                     />
                   </div>
-                </div>
 
-                {/* Author Info */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
                       Author Name *
@@ -370,7 +827,7 @@ export default function AdminPage() {
                       value={author}
                       onChange={(e) => setAuthor(e.target.value)}
                       placeholder="e.g. Dr. Julian Vance"
-                      className="w-full px-4 py-2.5 text-xs bg-[#0B0F19] border border-white/10 rounded-xl outline-none focus:border-purple-500 text-white placeholder:text-slate-600"
+                      className="w-full px-4 py-2.5 text-xs bg-[#090D16] border border-white/10 rounded-xl outline-none focus:border-purple-500 text-white placeholder:text-slate-600"
                     />
                   </div>
 
@@ -381,7 +838,7 @@ export default function AdminPage() {
                     <select
                       value={category}
                       onChange={(e) => setCategory(e.target.value as any)}
-                      className="w-full px-4 py-2.5 text-xs bg-[#0B0F19] border border-white/10 rounded-xl outline-none focus:border-purple-500 text-white cursor-pointer"
+                      className="w-full px-4 py-2.5 text-xs bg-[#090D16] border border-white/10 rounded-xl outline-none focus:border-purple-500 text-white cursor-pointer"
                     >
                       {CATEGORIES.filter((c) => c !== 'All Books').map((cat) => (
                         <option key={cat} value={cat}>
@@ -400,33 +857,33 @@ export default function AdminPage() {
                       value={authorBio}
                       onChange={(e) => setAuthorBio(e.target.value)}
                       placeholder="e.g. Systems researcher and former director at Cambridge AI Institute."
-                      className="w-full px-4 py-2.5 text-xs bg-[#0B0F19] border border-white/10 rounded-xl outline-none focus:border-purple-500 text-white placeholder:text-slate-600"
+                      className="w-full px-4 py-2.5 text-xs bg-[#090D16] border border-white/10 rounded-xl outline-none focus:border-purple-500 text-white placeholder:text-slate-600"
                     />
                   </div>
                 </div>
 
-                {/* Pricing & Flags */}
+                {/* 4. PRICING & FLAGS */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-2xl bg-white/[0.03] border border-white/10">
                   <div className="space-y-1">
-                    <label className="block text-[11px] font-bold text-slate-400 uppercase">Price ($) *</label>
+                    <label className="block text-[11px] font-bold text-slate-400 uppercase">Selling Price ($) *</label>
                     <input
                       type="number"
                       step="0.01"
                       required
                       value={price}
                       onChange={(e) => setPrice(e.target.value)}
-                      className="w-full px-3 py-2 text-xs bg-[#0B0F19] border border-white/10 rounded-lg text-emerald-400 font-mono font-bold outline-none focus:border-emerald-500"
+                      className="w-full px-3 py-2 text-xs bg-[#090D16] border border-white/10 rounded-lg text-emerald-400 font-mono font-bold outline-none focus:border-emerald-500"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="block text-[11px] font-bold text-slate-400 uppercase">Original ($)</label>
+                    <label className="block text-[11px] font-bold text-slate-400 uppercase">Original Price ($)</label>
                     <input
                       type="number"
                       step="0.01"
                       value={originalPrice}
                       onChange={(e) => setOriginalPrice(e.target.value)}
-                      className="w-full px-3 py-2 text-xs bg-[#0B0F19] border border-white/10 rounded-lg text-slate-400 font-mono outline-none focus:border-purple-500"
+                      className="w-full px-3 py-2 text-xs bg-[#090D16] border border-white/10 rounded-lg text-slate-400 font-mono outline-none focus:border-purple-500"
                     />
                   </div>
 
@@ -437,28 +894,27 @@ export default function AdminPage() {
                       value={discountBadge}
                       onChange={(e) => setDiscountBadge(e.target.value)}
                       placeholder="40% OFF"
-                      className="w-full px-3 py-2 text-xs bg-[#0B0F19] border border-white/10 rounded-lg text-cyan-400 font-mono outline-none focus:border-cyan-500"
+                      className="w-full px-3 py-2 text-xs bg-[#090D16] border border-white/10 rounded-lg text-cyan-400 font-mono outline-none focus:border-cyan-500"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="block text-[11px] font-bold text-slate-400 uppercase">Pages</label>
+                    <label className="block text-[11px] font-bold text-slate-400 uppercase">Page Count</label>
                     <input
                       type="number"
                       value={pageCount}
                       onChange={(e) => setPageCount(e.target.value)}
-                      className="w-full px-3 py-2 text-xs bg-[#0B0F19] border border-white/10 rounded-lg text-white font-mono outline-none focus:border-purple-500"
+                      className="w-full px-3 py-2 text-xs bg-[#090D16] border border-white/10 rounded-lg text-white font-mono outline-none focus:border-purple-500"
                     />
                   </div>
 
-                  {/* Toggles */}
                   <div className="col-span-2 sm:col-span-4 flex items-center gap-6 pt-2">
                     <label className="flex items-center gap-2 cursor-pointer text-xs">
                       <input
                         type="checkbox"
                         checked={isBestseller}
                         onChange={(e) => setIsBestseller(e.target.checked)}
-                        className="rounded bg-[#0B0F19] border-white/20 text-purple-600 focus:ring-purple-500"
+                        className="rounded bg-[#090D16] border-white/20 text-purple-600 focus:ring-purple-500"
                       />
                       <span className="font-semibold text-slate-300">Highlight as Bestseller</span>
                     </label>
@@ -468,44 +924,10 @@ export default function AdminPage() {
                         type="checkbox"
                         checked={isFeatured}
                         onChange={(e) => setIsFeatured(e.target.checked)}
-                        className="rounded bg-[#0B0F19] border-white/20 text-purple-600 focus:ring-purple-500"
+                        className="rounded bg-[#090D16] border-white/20 text-purple-600 focus:ring-purple-500"
                       />
                       <span className="font-semibold text-slate-300">Feature in Storefront</span>
                     </label>
-                  </div>
-                </div>
-
-                {/* Cover Image & Presets */}
-                <div className="space-y-2">
-                  <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
-                    <span>Cover Artwork URL *</span>
-                    <span className="text-[11px] text-purple-400 font-normal">Or choose preset below</span>
-                  </label>
-                  <input
-                    type="url"
-                    required
-                    value={coverImage}
-                    onChange={(e) => setCoverImage(e.target.value)}
-                    placeholder="https://images.unsplash.com/..."
-                    className="w-full px-4 py-2.5 text-xs bg-[#0B0F19] border border-white/10 rounded-xl outline-none focus:border-purple-500 text-white font-mono"
-                  />
-
-                  {/* Preset cover quick buttons */}
-                  <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-1 no-scrollbar">
-                    {COVER_PRESETS.map((preset, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setCoverImage(preset.url)}
-                        className={`px-3 py-1.5 rounded-lg text-[10px] font-bold whitespace-nowrap transition-all border ${
-                          coverImage === preset.url
-                            ? 'bg-purple-600 text-white border-purple-500'
-                            : 'bg-white/[0.04] text-slate-400 border-white/10 hover:text-white'
-                        }`}
-                      >
-                        {preset.name}
-                      </button>
-                    ))}
                   </div>
                 </div>
 
@@ -523,7 +945,7 @@ export default function AdminPage() {
                         className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
                           formats.includes(fmt)
                             ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-sm'
-                            : 'bg-[#0B0F19] text-slate-500 border-white/10'
+                            : 'bg-[#090D16] text-slate-500 border-white/10'
                         }`}
                       >
                         ✓ {fmt}
@@ -543,17 +965,36 @@ export default function AdminPage() {
                     value={synopsis}
                     onChange={(e) => setSynopsis(e.target.value)}
                     placeholder="A detailed critical overview of the book's thesis, narrative arc, or technical architecture..."
-                    className="w-full px-4 py-3 text-xs bg-[#0B0F19] border border-white/10 rounded-xl outline-none focus:border-purple-500 text-white placeholder:text-slate-600"
+                    className="w-full px-4 py-3 text-xs bg-[#090D16] border border-white/10 rounded-xl outline-none focus:border-purple-500 text-white placeholder:text-slate-600"
                   />
                 </div>
 
-                {/* Interactive Sample Excerpt for in-browser reader */}
-                <div className="p-4 rounded-2xl bg-purple-950/20 border border-purple-500/20 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Feather className="w-4 h-4 text-purple-400" />
-                    <span className="text-xs font-bold text-purple-200 uppercase tracking-wider">
-                      Sample Chapter Excerpt (For In-Browser Reader)
-                    </span>
+                {/* 5. SAMPLE READING EXCERPT (WITH PC .TXT UPLOAD OPTION) */}
+                <div className="p-5 rounded-2xl bg-purple-950/20 border border-purple-500/20 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Feather className="w-4 h-4 text-purple-400" />
+                      <span className="text-xs font-bold text-purple-200 uppercase tracking-wider">
+                        Sample Chapter Excerpt (For In-Browser Reader)
+                      </span>
+                    </div>
+
+                    {/* Import .txt excerpt button */}
+                    <input
+                      ref={textExcerptInputRef}
+                      type="file"
+                      accept=".txt,.md"
+                      onChange={handleTextExcerptUpload}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => textExcerptInputRef.current?.click()}
+                      className="px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 text-[11px] font-bold border border-purple-500/30 flex items-center gap-1 transition-colors"
+                    >
+                      <Upload className="w-3 h-3" />
+                      <span>Upload .txt from PC</span>
+                    </button>
                   </div>
 
                   <input
@@ -561,15 +1002,15 @@ export default function AdminPage() {
                     value={chapterTitle}
                     onChange={(e) => setChapterTitle(e.target.value)}
                     placeholder="Chapter title, e.g. Chapter 1: The First Principle"
-                    className="w-full px-3.5 py-2 text-xs bg-[#0B0F19] border border-white/10 rounded-lg text-white"
+                    className="w-full px-3.5 py-2 text-xs bg-[#090D16] border border-white/10 rounded-lg text-white"
                   />
 
                   <textarea
                     rows={4}
                     value={sampleParagraphs}
                     onChange={(e) => setSampleParagraphs(e.target.value)}
-                    placeholder="Type or paste sample chapter text. Separate paragraphs with a blank double newline. Visitors will read this directly in the sample reader modal!"
-                    className="w-full px-3.5 py-2.5 text-xs bg-[#0B0F19] border border-white/10 rounded-lg text-white placeholder:text-slate-600 font-serif"
+                    placeholder="Type or paste sample chapter text. Separate paragraphs with a blank double newline. Readers will be able to read this directly in the sample reader modal!"
+                    className="w-full px-3.5 py-2.5 text-xs bg-[#090D16] border border-white/10 rounded-lg text-white placeholder:text-slate-600 font-serif"
                   />
                 </div>
 
@@ -590,9 +1031,9 @@ export default function AdminPage() {
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                   <Eye className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Real-Time Storefront Preview</span>
+                  <span>Live Storefront Preview</span>
                 </span>
-                <span className="text-[10px] font-mono text-slate-500">Updates live as you type</span>
+                <span className="text-[10px] font-mono text-slate-500">Reflects PC uploads & inputs</span>
               </div>
 
               {/* Rendered Preview Card */}
@@ -662,7 +1103,7 @@ export default function AdminPage() {
               <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/10 text-xs text-slate-400 flex items-start gap-2.5">
                 <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                 <span>
-                  Once published, this book instantly becomes available in the storefront catalog, interactive in-browser reader, and checkout bag.
+                  Once published, this edition appears instantly in the customer storefront, interactive reader modal, and cart.
                 </span>
               </div>
             </div>

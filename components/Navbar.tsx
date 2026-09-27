@@ -3,7 +3,20 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
-import { ShoppingBag, Heart, Search, Menu, X, Sparkles, Sliders } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import {
+  ShoppingBag,
+  Heart,
+  Search,
+  Menu,
+  X,
+  Sparkles,
+  User,
+  LogOut,
+  Shield,
+  BookMarked,
+  ChevronDown,
+} from 'lucide-react';
 
 interface NavbarProps {
   searchQuery: string;
@@ -13,32 +26,61 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ searchQuery, setSearchQuery, onSelectCategory }) => {
   const { totalItemCount, total, setIsCartOpen, wishlist } = useCart();
+  const { user, openAuthModal, signOut, isAdminAuthenticated } = useAuth();
+  
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-40 bg-[#FAF8F5]/85 backdrop-blur-xl border-b border-[#E8DFD1]/80 transition-all duration-300">
       {/* Top Luxury Announcement Ribbon */}
-      <div className="bg-[#12161F] text-[#E5D7B7] text-xs py-2 px-4 text-center font-medium flex items-center justify-between sm:justify-center gap-2.5 tracking-wider border-b border-[#2A241C]">
-        <div className="flex items-center justify-center gap-2 mx-auto">
+      <div className="bg-[#12161F] text-[#E5D7B7] text-xs py-2 px-4 text-center font-medium flex items-center justify-between gap-2.5 tracking-wider border-b border-[#2A241C]">
+        <div className="flex items-center gap-2 mx-auto">
           <Sparkles className="w-3.5 h-3.5 text-[#D4AF37] animate-pulse" />
           <span className="text-[11px] sm:text-xs tracking-wide">
             Autumn Collection — Code <strong className="text-[#F3E2B8] bg-white/10 px-2 py-0.5 rounded font-mono border border-[#D4AF37]/30 tracking-widest font-semibold">BOOKFORU20</strong> for 20% off
           </span>
         </div>
-        <Link
-          href="/admin"
-          className="hidden md:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-purple-500/20 to-cyan-500/20 hover:from-purple-500/30 hover:to-cyan-500/30 text-cyan-300 border border-cyan-400/30 text-[10px] font-bold uppercase tracking-widest transition-all"
-        >
-          <span>Studio Admin</span>
-          <span>→</span>
-        </Link>
+
+        {/* Member status top right */}
+        <div className="hidden md:flex items-center gap-3 shrink-0 text-[11px]">
+          {user ? (
+            <div className="flex items-center gap-2 text-slate-300">
+              <span className="text-[#E5D7B7]">Welcome, <strong className="text-white">{user.name.split(' ')[0]}</strong></span>
+              {user.role === 'admin' && (
+                <Link
+                  href="/admin"
+                  className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 text-[10px] font-bold border border-purple-500/30 hover:bg-purple-500/30 transition-colors"
+                >
+                  Admin Portal
+                </Link>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => openAuthModal('signin')}
+                className="text-[#E5D7B7] hover:text-white transition-colors"
+              >
+                Sign In
+              </button>
+              <span className="text-white/20">•</span>
+              <button
+                onClick={() => openAuthModal('signup')}
+                className="text-[#D4AF37] hover:text-[#F3E2B8] font-bold transition-colors"
+              >
+                Register
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20 gap-4">
           
           {/* Logo with Luxury Serif Monogram */}
-          <a href="#" className="flex items-center gap-3.5 group flex-shrink-0">
+          <Link href="/" className="flex items-center gap-3.5 group flex-shrink-0">
             <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#1E2532] to-[#0D111A] border border-[#D4AF37]/40 flex items-center justify-center text-[#E5C378] shadow-lg shadow-black/20 group-hover:border-[#D4AF37] transition-all duration-300">
               <span className="font-serif font-black text-lg tracking-tighter text-gold-gradient">bU</span>
             </div>
@@ -52,7 +94,7 @@ export const Navbar: React.FC<NavbarProps> = ({ searchQuery, setSearchQuery, onS
                 Private Digital Editions
               </span>
             </div>
-          </a>
+          </Link>
 
           {/* Search Bar - Desktop with Luxury Styling */}
           <div className="hidden md:flex flex-1 max-w-md mx-6 relative">
@@ -83,14 +125,84 @@ export const Navbar: React.FC<NavbarProps> = ({ searchQuery, setSearchQuery, onS
             <button onClick={() => onSelectCategory('Sci-Fi & Fantasy')} className="hover:text-[#B8924C] transition-colors">Speculative</button>
             <button onClick={() => onSelectCategory('Business')} className="hover:text-[#B8924C] transition-colors">Monographs</button>
             <a href="#faq" className="hover:text-[#B8924C] transition-colors">Devices & FAQ</a>
-            <Link href="/admin" className="text-purple-600 hover:text-purple-800 font-black flex items-center gap-1 transition-colors">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Studio</span>
-            </Link>
           </nav>
 
-          {/* Action buttons: Wishlist & Cart */}
+          {/* Action buttons: Auth, Wishlist & Cart */}
           <div className="flex items-center gap-3">
+            
+            {/* User Profile / Auth Button */}
+            {user ? (
+              <div className="relative">
+                <button
+                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                  className="flex items-center gap-2 p-1.5 sm:px-3 sm:py-1.5 rounded-full bg-white border border-[#DDD2BE] hover:border-[#B8924C] text-[#2A2318] transition-all text-xs font-bold shadow-sm"
+                >
+                  <div className="w-6 h-6 rounded-full bg-[#121620] text-[#E5D7B7] flex items-center justify-center text-[11px] font-black">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="hidden sm:inline max-w-[90px] truncate">{user.name.split(' ')[0]}</span>
+                  <ChevronDown className="w-3 h-3 text-[#8C7E6C]" />
+                </button>
+
+                {/* Dropdown Menu */}
+                {profileDropdownOpen && (
+                  <div
+                    className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-[#E0D5C3] p-2 space-y-1 z-50 animate-in fade-in slide-in-from-top-2 duration-150"
+                    onClick={() => setProfileDropdownOpen(false)}
+                  >
+                    <div className="p-3 border-b border-[#F0E9DC]">
+                      <p className="font-serif font-bold text-sm text-[#141924]">{user.name}</p>
+                      <p className="text-[11px] text-[#7A6F5E] truncate">{user.email}</p>
+                      <span className="inline-block mt-1 text-[9px] font-black uppercase tracking-wider text-[#8C682D] bg-[#FAF4E6] px-2 py-0.5 rounded border border-[#DFCCA7]">
+                        {user.role === 'admin' ? 'Atelier Director' : 'Patron Member'}
+                      </span>
+                    </div>
+
+                    <a
+                      href="#catalog"
+                      className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-[#4F4638] hover:bg-[#FAF8F5] rounded-xl transition-colors"
+                    >
+                      <BookMarked className="w-4 h-4 text-[#8C682D]" />
+                      <span>My Digital Editions</span>
+                    </a>
+
+                    {(user.role === 'admin' || isAdminAuthenticated) && (
+                      <Link
+                        href="/admin"
+                        className="flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-purple-700 hover:bg-purple-50 rounded-xl transition-colors"
+                      >
+                        <Shield className="w-4 h-4 text-purple-600" />
+                        <span>Studio Admin Console</span>
+                      </Link>
+                    )}
+
+                    <button
+                      onClick={signOut}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors text-left"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="hidden sm:flex items-center gap-1.5">
+                <button
+                  onClick={() => openAuthModal('signin')}
+                  className="px-3.5 py-2 text-xs font-bold text-[#4F4638] hover:text-black rounded-full hover:bg-white transition-colors"
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => openAuthModal('signup')}
+                  className="px-3.5 py-1.5 text-xs font-bold text-[#141924] bg-white border border-[#DDD2BE] hover:border-[#B8924C] rounded-full transition-all shadow-sm"
+                >
+                  Join
+                </button>
+              </div>
+            )}
+
             {/* Wishlist Indicator */}
             <a
               href="#catalog"
@@ -109,7 +221,7 @@ export const Navbar: React.FC<NavbarProps> = ({ searchQuery, setSearchQuery, onS
             <button
               onClick={() => setIsCartOpen(true)}
               aria-label="Shopping Bag"
-              className="relative flex items-center gap-2.5 px-4 py-2.5 bg-[#12161F] hover:bg-[#1A202D] text-[#EFE7D3] rounded-full font-bold shadow-md shadow-black/15 active:scale-95 transition-all text-xs border border-[#3A3326]"
+              className="relative flex items-center gap-2.5 px-4 py-2.5 bg-[#121620] hover:bg-[#1E2536] text-[#EFE7D3] rounded-full font-bold shadow-md shadow-black/15 active:scale-95 transition-all text-xs border border-[#3A3326]"
             >
               <ShoppingBag className="w-3.5 h-3.5 text-[#D4AF37]" />
               <span className="hidden sm:inline tracking-wider uppercase font-semibold text-[11px]">Bag</span>
@@ -154,6 +266,40 @@ export const Navbar: React.FC<NavbarProps> = ({ searchQuery, setSearchQuery, onS
         {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
           <div className="lg:hidden border-t border-[#E8DFD1] py-4 space-y-2 bg-[#FAF8F5]">
+            {user ? (
+              <div className="p-3 bg-white rounded-xl border border-[#DDD2BE] mb-2">
+                <p className="font-serif font-bold text-sm text-[#141924]">{user.name}</p>
+                <p className="text-xs text-[#7A6F5E]">{user.email}</p>
+                <button
+                  onClick={signOut}
+                  className="mt-2 text-xs font-bold text-rose-600 underline"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <button
+                  onClick={() => {
+                    openAuthModal('signin');
+                    setMobileMenuOpen(false);
+                  }}
+                  className="py-2 rounded-xl bg-white border border-[#DDD2BE] font-bold text-xs text-[#141924]"
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => {
+                    openAuthModal('signup');
+                    setMobileMenuOpen(false);
+                  }}
+                  className="py-2 rounded-xl bg-[#121620] text-white font-bold text-xs"
+                >
+                  Create Account
+                </button>
+              </div>
+            )}
+
             <a
               href="#catalog"
               onClick={() => setMobileMenuOpen(false)}
@@ -186,13 +332,6 @@ export const Navbar: React.FC<NavbarProps> = ({ searchQuery, setSearchQuery, onS
             >
               Device Guides & Reader FAQ
             </a>
-            <Link
-              href="/admin"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 text-sm font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-xl"
-            >
-              ✨ Studio Admin (Add E-Books)
-            </Link>
           </div>
         )}
 

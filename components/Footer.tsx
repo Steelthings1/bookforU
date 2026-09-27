@@ -122,9 +122,9 @@ export const Footer: React.FC = () => {
             <div className="pt-2">
               <Link
                 href="/admin"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-900/40 to-cyan-900/40 hover:from-purple-900/60 hover:to-cyan-900/60 text-cyan-300 border border-cyan-500/30 text-[11px] font-bold tracking-wider transition-all"
+                className="text-[11px] text-[#7A6F60] hover:text-[#D4AF37] transition-colors flex items-center gap-1.5"
               >
-                <span>⚡ Admin Studio (Add Books)</span>
+                <span>🔒 Staff & Curator Access</span>
               </Link>
             </div>
           </div>

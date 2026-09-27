@@ -2,10 +2,12 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Playfair_Display, Plus_Jakarta_Sans } from 'next/font/google';
 import { CartProvider } from '@/context/CartContext';
+import { AuthProvider } from '@/context/AuthContext';
 import { CartDrawer } from '@/components/CartDrawer';
 import { SampleReaderModal } from '@/components/SampleReaderModal';
 import { BookDetailModal } from '@/components/BookDetailModal';
 import { CheckoutModal } from '@/components/CheckoutModal';
+import { AuthModal } from '@/components/AuthModal';
 
 const playfair = Playfair_Display({
   subsets: ['latin'],
@@ -54,13 +56,16 @@ export default function RootLayout({
         <link rel="preconnect" href="https://images.unsplash.com" />
       </head>
       <body className="min-h-screen flex flex-col font-sans bg-[#FAF8F5] text-slate-900 antialiased selection:bg-champagne-500 selection:text-white">
-        <CartProvider>
-          {children}
-          <CartDrawer />
-          <SampleReaderModal />
-          <BookDetailModal />
-          <CheckoutModal />
-        </CartProvider>
+        <AuthProvider>
+          <CartProvider>
+            {children}
+            <CartDrawer />
+            <SampleReaderModal />
+            <BookDetailModal />
+            <CheckoutModal />
+            <AuthModal />
+          </CartProvider>
+        </AuthProvider>
       </body>
     </html>
   );
