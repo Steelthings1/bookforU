@@ -14,7 +14,7 @@ export interface Book {
   author: string;
   authorBio: string;
   coverImage: string;
-  coverSource?: 'pc_upload' | 'google_drive' | 'web_url';
+  coverSource?: 'pc_upload' | 'device_upload' | 'google_drive' | 'web_url';
   category: 'Fiction' | 'Sci-Fi & Fantasy' | 'Tech & AI' | 'Self-Help' | 'Business' | 'Psychology' | 'Design';
   rating: number;
   reviewCount: number;
@@ -36,7 +36,7 @@ export interface Book {
     paragraphs: string[];
   };
   digitalFile?: {
-    source: 'pc_upload' | 'google_drive' | 'web_url';
+    source: 'pc_upload' | 'device_upload' | 'google_drive' | 'web_url';
     fileName?: string;
     fileSizeMb?: number;
     url?: string;

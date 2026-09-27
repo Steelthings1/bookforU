@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
@@ -31,7 +31,33 @@ import {
   Key,
   Check,
   FileUp,
+  Smartphone,
+  Camera,
+  Laptop,
+  Image as ImageIcon,
+  Cloud,
+  X,
+  Palette,
 } from 'lucide-react';
+
+const STUDIO_BANNER_PRESETS = [
+  {
+    name: 'Grand Renaissance Library',
+    url: 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=1600&q=80',
+  },
+  {
+    name: 'Obsidian Minimalist Atelier',
+    url: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=1600&q=80',
+  },
+  {
+    name: 'Cosmic Constellation Stacks',
+    url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1600&q=80',
+  },
+  {
+    name: 'Nordic Wooden Archive',
+    url: 'https://images.unsplash.com/photo-1532012164546-f432f2e3777f?auto=format&fit=crop&w=1600&q=80',
+  },
+];
 
 const COVER_PRESETS = [
   {
@@ -68,6 +94,40 @@ export default function AdminPage() {
   const [adminKeyInput, setAdminKeyInput] = useState('');
   const [gateError, setGateError] = useState<string | null>(null);
 
+  // Studio Panoramic Cover Photo / Billboard State
+  const [studioCoverPhoto, setStudioCoverPhoto] = useState<string>(STUDIO_BANNER_PRESETS[0].url);
+  const [isBannerModalOpen, setIsBannerModalOpen] = useState(false);
+  const [bannerSourceTab, setBannerSourceTab] = useState<'pc_upload' | 'device_upload' | 'google_drive' | 'presets'>('pc_upload');
+  const [uploadedBannerFileName, setUploadedBannerFileName] = useState<string | null>(null);
+  const [driveBannerUrl, setDriveBannerUrl] = useState('');
+  const [syncStorefrontBanner, setSyncStorefrontBanner] = useState(true);
+
+  const bannerPcInputRef = useRef<HTMLInputElement>(null);
+  const bannerDeviceInputRef = useRef<HTMLInputElement>(null);
+
+  // Load Saved Studio Banner from LocalStorage
+  useEffect(() => {
+    try {
+      const savedStudioCover = localStorage.getItem('bookforu_studio_cover_photo');
+      if (savedStudioCover) setStudioCoverPhoto(savedStudioCover);
+      const savedSync = localStorage.getItem('bookforu_store_cover_photo_sync');
+      if (savedSync !== null) setSyncStorefrontBanner(savedSync === 'true');
+    } catch {}
+  }, []);
+
+  const saveStudioCoverPhoto = (newUrl: string) => {
+    setStudioCoverPhoto(newUrl);
+    try {
+      localStorage.setItem('bookforu_studio_cover_photo', newUrl);
+      if (syncStorefrontBanner) {
+        localStorage.setItem('bookforu_store_cover_photo', newUrl);
+        localStorage.setItem('bookforu_store_cover_photo_sync', 'true');
+      }
+    } catch {}
+    setToastMessage('Studio cover photo updated successfully!');
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
   // Form State for Manual E-Book Creation
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState('');
@@ -88,14 +148,15 @@ export default function AdminPage() {
   const [chapterTitle, setChapterTitle] = useState('Chapter 1: The First Principle');
   const [sampleParagraphs, setSampleParagraphs] = useState('');
 
-  // Cover Image Source Tabs & State
-  const [coverSourceTab, setCoverSourceTab] = useState<'pc_upload' | 'google_drive' | 'web_url'>('pc_upload');
+  // Book Cover Image Source Tabs & State (PC / Device / Drive / Presets)
+  const [coverSourceTab, setCoverSourceTab] = useState<'pc_upload' | 'device_upload' | 'google_drive' | 'web_url'>('pc_upload');
   const [coverImage, setCoverImage] = useState(COVER_PRESETS[0].url);
   const [uploadedCoverFileName, setUploadedCoverFileName] = useState<string | null>(null);
+  const [uploadedCoverFileSize, setUploadedCoverFileSize] = useState<string | null>(null);
   const [driveCoverUrl, setDriveCoverUrl] = useState('');
 
-  // Digital Book File Source Tabs & State
-  const [fileSourceTab, setFileSourceTab] = useState<'pc_upload' | 'google_drive' | 'web_url'>('pc_upload');
+  // Digital Book File Source Tabs & State (PC / Device / Drive / Direct URL)
+  const [fileSourceTab, setFileSourceTab] = useState<'pc_upload' | 'device_upload' | 'google_drive' | 'web_url'>('pc_upload');
   const [uploadedBookFileName, setUploadedBookFileName] = useState<string | null>(null);
   const [uploadedBookFileSizeMb, setUploadedBookFileSizeMb] = useState<number | null>(null);
   const [driveBookUrl, setDriveBookUrl] = useState('');
@@ -105,8 +166,10 @@ export default function AdminPage() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'create' | 'inventory'>('create');
 
-  const coverFileInputRef = useRef<HTMLInputElement>(null);
-  const bookFileInputRef = useRef<HTMLInputElement>(null);
+  const coverPcFileInputRef = useRef<HTMLInputElement>(null);
+  const coverDeviceFileInputRef = useRef<HTMLInputElement>(null);
+  const bookPcFileInputRef = useRef<HTMLInputElement>(null);
+  const bookDeviceFileInputRef = useRef<HTMLInputElement>(null);
   const textExcerptInputRef = useRef<HTMLInputElement>(null);
 
   // Helper to convert Google Drive sharing link to direct view URL
@@ -114,17 +177,18 @@ export default function AdminPage() {
     const trimmed = url.trim();
     const match = trimmed.match(/\/d\/([a-zA-Z0-9_-]+)/) || trimmed.match(/id=([a-zA-Z0-9_-]+)/);
     if (match && match[1]) {
-      return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+      return `https://lh3.googleusercontent.com/d/${match[1]}=w1200`;
     }
     return trimmed;
   };
 
-  // Handle Cover File Upload from PC
-  const handleCoverFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle Book Cover File Upload from PC
+  const handleCoverPcUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setUploadedCoverFileName(file.name);
+    setUploadedCoverFileSize((file.size / 1024).toFixed(1) + ' KB');
     const reader = new FileReader();
     reader.onload = (uploadEvent) => {
       const dataUrl = uploadEvent.target?.result as string;
@@ -135,8 +199,68 @@ export default function AdminPage() {
     reader.readAsDataURL(file);
   };
 
+  // Handle Book Cover File Upload from Mobile / Device / Camera
+  const handleCoverDeviceUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadedCoverFileName(file.name);
+    setUploadedCoverFileSize((file.size / 1024).toFixed(1) + ' KB');
+    const reader = new FileReader();
+    reader.onload = (uploadEvent) => {
+      const dataUrl = uploadEvent.target?.result as string;
+      if (dataUrl) {
+        setCoverImage(dataUrl);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Handle Banner Upload from PC
+  const handleBannerPcUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadedBannerFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = (uploadEvent) => {
+      const dataUrl = uploadEvent.target?.result as string;
+      if (dataUrl) {
+        saveStudioCoverPhoto(dataUrl);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Handle Banner Upload from Device
+  const handleBannerDeviceUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadedBannerFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = (uploadEvent) => {
+      const dataUrl = uploadEvent.target?.result as string;
+      if (dataUrl) {
+        saveStudioCoverPhoto(dataUrl);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Handle Digital Book File Upload from PC
-  const handleBookFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBookPcUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadedBookFileName(file.name);
+    const sizeMb = parseFloat((file.size / (1024 * 1024)).toFixed(2));
+    setUploadedBookFileSizeMb(sizeMb);
+    setFileSizeMb(sizeMb.toString());
+  };
+
+  // Handle Digital Book File Upload from Device
+  const handleBookDeviceUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -476,6 +600,46 @@ export default function AdminPage() {
       {/* Main Container */}
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-10">
         
+        {/* Studio Panoramic Cover Photo Banner */}
+        <div className="relative rounded-3xl overflow-hidden border border-white/10 shadow-2xl group min-h-[220px] sm:min-h-[260px] flex flex-col justify-end p-6 sm:p-8 bg-[#090D16]">
+          {/* Cover Photo Background Image */}
+          <div
+            className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+            style={{ backgroundImage: `url(${studioCoverPhoto})` }}
+          />
+          {/* High Contrast Luxury Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0B0F19] via-[#0B0F19]/65 to-black/30" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(168,85,247,0.25),transparent_70%)]" />
+
+          {/* Banner Controls & Information */}
+          <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-purple-300 text-xs font-bold uppercase tracking-wider mb-2">
+                <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                <span>bookforU Atelier • Editorial Studio Banner</span>
+              </div>
+              <h1 className="font-serif text-3xl sm:text-4xl font-black text-white tracking-tight drop-shadow-md">
+                Admin Control Room & Catalog Studio
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-300 max-w-xl mt-1 drop-shadow">
+                Manage your digital publications, customize store cover photos, upload books from PC, device or Google Drive, and synchronize real-time storefront inventories.
+              </p>
+            </div>
+
+            {/* Change Cover Photo Action */}
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setIsBannerModalOpen(true)}
+                className="px-4 py-2.5 rounded-2xl bg-white/15 hover:bg-white/25 active:scale-95 text-white font-bold text-xs uppercase tracking-wider backdrop-blur-xl border border-white/25 shadow-lg flex items-center gap-2 transition-all"
+              >
+                <Camera className="w-4 h-4 text-purple-300" />
+                <span>Change Studio Cover Photo</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Vibrant KPI Overview Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           <div className="relative overflow-hidden p-6 rounded-3xl bg-gradient-to-br from-purple-950/40 via-[#13192B] to-[#0D1220] border border-purple-500/25 shadow-xl">
@@ -544,49 +708,67 @@ export default function AdminPage() {
 
               <form onSubmit={handleManualAddBook} className="space-y-6">
                 
-                {/* 1. BOOK COVER UPLOAD OPTIONS (PC / Google Drive / URL) */}
-                <div className="p-5 rounded-2xl bg-white/[0.03] border border-purple-500/30 space-y-4">
+                {/* 1. BOOK COVER PHOTO UPLOAD (PC / Device / Google Drive / URL) */}
+                <div className="p-6 rounded-3xl bg-white/[0.03] border border-purple-500/30 space-y-5">
                   <div className="flex items-center justify-between">
-                    <label className="block text-xs font-bold text-purple-300 uppercase tracking-wider flex items-center gap-2">
-                      <Upload className="w-4 h-4 text-purple-400" />
-                      <span>Book Cover Artwork (Upload / Drive / URL) *</span>
-                    </label>
+                    <div>
+                      <label className="block text-xs font-bold text-purple-300 uppercase tracking-wider flex items-center gap-2">
+                        <ImageIcon className="w-4 h-4 text-purple-400" />
+                        <span>Book Cover Photo / Artwork *</span>
+                      </label>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Upload cover photo from your PC, mobile device/camera, or attach a Google Drive share link.
+                      </p>
+                    </div>
                   </div>
 
-                  {/* Cover Option Tabs */}
-                  <div className="grid grid-cols-3 gap-2 p-1 bg-[#090D16] rounded-xl text-xs font-bold border border-white/10">
+                  {/* 4 Multi-Source Option Tabs */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-1.5 bg-[#090D16] rounded-2xl text-xs font-bold border border-white/10">
                     <button
                       type="button"
                       onClick={() => setCoverSourceTab('pc_upload')}
-                      className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                      className={`py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-2 ${
                         coverSourceTab === 'pc_upload'
-                          ? 'bg-purple-600 text-white shadow'
+                          ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
                           : 'text-slate-400 hover:text-white'
                       }`}
                     >
-                      <HardDrive className="w-3.5 h-3.5" />
+                      <Laptop className="w-3.5 h-3.5" />
                       <span>From PC</span>
                     </button>
 
                     <button
                       type="button"
-                      onClick={() => setCoverSourceTab('google_drive')}
-                      className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
-                        coverSourceTab === 'google_drive'
-                          ? 'bg-purple-600 text-white shadow'
+                      onClick={() => setCoverSourceTab('device_upload')}
+                      className={`py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-2 ${
+                        coverSourceTab === 'device_upload'
+                          ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
                           : 'text-slate-400 hover:text-white'
                       }`}
                     >
-                      <Globe className="w-3.5 h-3.5" />
+                      <Smartphone className="w-3.5 h-3.5" />
+                      <span>From Device</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setCoverSourceTab('google_drive')}
+                      className={`py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-2 ${
+                        coverSourceTab === 'google_drive'
+                          ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <Cloud className="w-3.5 h-3.5" />
                       <span>Google Drive</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setCoverSourceTab('web_url')}
-                      className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                      className={`py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-2 ${
                         coverSourceTab === 'web_url'
-                          ? 'bg-purple-600 text-white shadow'
+                          ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
                           : 'text-slate-400 hover:text-white'
                       }`}
                     >
@@ -595,67 +777,112 @@ export default function AdminPage() {
                     </button>
                   </div>
 
-                  {/* Mode A: Upload Cover from PC */}
+                  {/* Mode 1: Upload from PC */}
                   {coverSourceTab === 'pc_upload' && (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <input
-                        ref={coverFileInputRef}
+                        ref={coverPcFileInputRef}
                         type="file"
-                        accept="image/*"
-                        onChange={handleCoverFileUpload}
+                        accept="image/png,image/jpeg,image/webp,image/gif"
+                        onChange={handleCoverPcUpload}
                         className="hidden"
                       />
                       <div
-                        onClick={() => coverFileInputRef.current?.click()}
-                        className="border-2 border-dashed border-purple-500/40 hover:border-purple-400 rounded-2xl p-6 text-center cursor-pointer bg-[#090D16]/50 hover:bg-[#090D16] transition-all space-y-2"
+                        onClick={() => coverPcFileInputRef.current?.click()}
+                        className="border-2 border-dashed border-purple-500/40 hover:border-purple-400 rounded-2xl p-6 text-center cursor-pointer bg-[#090D16]/60 hover:bg-[#090D16] transition-all group"
                       >
-                        <Upload className="w-8 h-8 text-purple-400 mx-auto" />
+                        <Laptop className="w-9 h-9 text-purple-400 mx-auto group-hover:scale-110 transition-transform mb-2" />
                         <p className="text-xs font-bold text-white">
-                          Click to select image file from your PC or drag & drop
+                          Select cover photo from your PC or drag & drop here
                         </p>
-                        <p className="text-[11px] text-slate-400">
-                          Supports PNG, JPG, WebP. Converted automatically for instant offline & cloud display.
+                        <p className="text-[11px] text-slate-400 mt-1">
+                          PNG, JPG, WebP supported. Encoded for instant offline & cloud display.
                         </p>
-                        {uploadedCoverFileName && (
-                          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-mono font-bold mt-2 border border-emerald-500/30">
-                            <Check className="w-3.5 h-3.5" /> Selected: {uploadedCoverFileName}
+                        {uploadedCoverFileName && coverSourceTab === 'pc_upload' && (
+                          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-mono font-bold mt-3 border border-emerald-500/30">
+                            <Check className="w-3.5 h-3.5" /> Selected PC File: {uploadedCoverFileName} {uploadedCoverFileSize && `(${uploadedCoverFileSize})`}
                           </div>
                         )}
                       </div>
                     </div>
                   )}
 
-                  {/* Mode B: Google Drive Cover Link */}
-                  {coverSourceTab === 'google_drive' && (
-                    <div className="space-y-2">
+                  {/* Mode 2: Upload from Device / Phone / Tablet / Camera */}
+                  {coverSourceTab === 'device_upload' && (
+                    <div className="space-y-3">
                       <input
-                        type="url"
-                        value={driveCoverUrl}
-                        onChange={(e) => {
-                          setDriveCoverUrl(e.target.value);
-                          if (e.target.value.trim()) {
-                            setCoverImage(convertGoogleDriveUrl(e.target.value));
-                          }
-                        }}
-                        placeholder="Paste Google Drive image share link (e.g. https://drive.google.com/file/d/...)"
-                        className="w-full px-4 py-2.5 text-xs bg-[#090D16] border border-white/10 rounded-xl outline-none focus:border-purple-500 text-white font-mono placeholder:text-slate-600"
+                        ref={coverDeviceFileInputRef}
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={handleCoverDeviceUpload}
+                        className="hidden"
                       />
-                      <p className="text-[11px] text-slate-400">
-                        💡 Note: Ensure Google Drive sharing is set to &ldquo;Anyone with the link can view&rdquo;.
-                      </p>
+                      <div
+                        onClick={() => coverDeviceFileInputRef.current?.click()}
+                        className="border-2 border-dashed border-purple-500/40 hover:border-purple-400 rounded-2xl p-6 text-center cursor-pointer bg-[#090D16]/60 hover:bg-[#090D16] transition-all group"
+                      >
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <Smartphone className="w-8 h-8 text-purple-400 group-hover:scale-110 transition-transform" />
+                          <Camera className="w-7 h-7 text-cyan-400 group-hover:scale-110 transition-transform" />
+                        </div>
+                        <p className="text-xs font-bold text-white">
+                          Tap to select photo from Device or take a new picture
+                        </p>
+                        <p className="text-[11px] text-slate-400 mt-1">
+                          Accesses your phone/tablet camera, photo roll, or device storage directly.
+                        </p>
+                        {uploadedCoverFileName && coverSourceTab === 'device_upload' && (
+                          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-mono font-bold mt-3 border border-emerald-500/30">
+                            <Check className="w-3.5 h-3.5" /> Device Photo Selected: {uploadedCoverFileName}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
 
-                  {/* Mode C: Web URL & Curated Presets */}
+                  {/* Mode 3: Google Drive Cover Link */}
+                  {coverSourceTab === 'google_drive' && (
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <input
+                          type="url"
+                          value={driveCoverUrl}
+                          onChange={(e) => {
+                            setDriveCoverUrl(e.target.value);
+                            if (e.target.value.trim()) {
+                              setCoverImage(convertGoogleDriveUrl(e.target.value));
+                            }
+                          }}
+                          placeholder="Paste Google Drive image share link (e.g. https://drive.google.com/file/d/...)"
+                          className="w-full px-4 py-3 pl-11 text-xs bg-[#090D16] border border-white/10 rounded-xl outline-none focus:border-purple-500 text-white font-mono placeholder:text-slate-600"
+                        />
+                        <Cloud className="w-4 h-4 text-purple-400 absolute left-3.5 top-3.5" />
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] text-slate-400">
+                        <span>💡 Tip: Ensure Google Drive sharing is set to &ldquo;Anyone with the link can view&rdquo;.</span>
+                        {driveCoverUrl.trim() && (
+                          <span className="text-emerald-400 font-bold flex items-center gap-1">
+                            <Check className="w-3 h-3" /> Drive Link Processed
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Mode 4: Web URL & Curated Presets */}
                   {coverSourceTab === 'web_url' && (
-                    <div className="space-y-2">
-                      <input
-                        type="url"
-                        value={coverImage}
-                        onChange={(e) => setCoverImage(e.target.value)}
-                        placeholder="https://images.unsplash.com/..."
-                        className="w-full px-4 py-2.5 text-xs bg-[#090D16] border border-white/10 rounded-xl outline-none focus:border-purple-500 text-white font-mono"
-                      />
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <input
+                          type="url"
+                          value={coverImage}
+                          onChange={(e) => setCoverImage(e.target.value)}
+                          placeholder="https://images.unsplash.com/..."
+                          className="w-full px-4 py-3 pl-11 text-xs bg-[#090D16] border border-white/10 rounded-xl outline-none focus:border-purple-500 text-white font-mono"
+                        />
+                        <Globe className="w-4 h-4 text-purple-400 absolute left-3.5 top-3.5" />
+                      </div>
                       <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1 no-scrollbar">
                         {COVER_PRESETS.map((preset, idx) => (
                           <button
@@ -664,7 +891,7 @@ export default function AdminPage() {
                             onClick={() => setCoverImage(preset.url)}
                             className={`px-3 py-1.5 rounded-lg text-[10px] font-bold whitespace-nowrap transition-all border ${
                               coverImage === preset.url
-                                ? 'bg-purple-600 text-white border-purple-500'
+                                ? 'bg-purple-600 text-white border-purple-500 shadow-md'
                                 : 'bg-white/[0.04] text-slate-400 border-white/10 hover:text-white'
                             }`}
                           >
@@ -674,51 +901,115 @@ export default function AdminPage() {
                       </div>
                     </div>
                   )}
+
+                  {/* Active Cover Photo Thumbnail Strip */}
+                  <div className="p-3.5 rounded-2xl bg-[#090D16] border border-white/10 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-16 rounded-lg overflow-hidden border border-white/20 bg-black shrink-0 relative shadow-inner">
+                        <img
+                          src={coverImage}
+                          alt="Cover Preview Thumbnail"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = COVER_PRESETS[0].url;
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-white">Selected Cover Photo</span>
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                            {coverSourceTab === 'pc_upload'
+                              ? 'PC File'
+                              : coverSourceTab === 'device_upload'
+                              ? 'Device Photo'
+                              : coverSourceTab === 'google_drive'
+                              ? 'Google Drive'
+                              : 'Curated Preset'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 truncate max-w-xs mt-0.5 font-mono">
+                          {uploadedCoverFileName || (coverImage.startsWith('data:') ? 'Base64 Local Image' : coverImage.slice(0, 45) + '...')}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCoverImage(COVER_PRESETS[0].url);
+                        setUploadedCoverFileName(null);
+                        setUploadedCoverFileSize(null);
+                        setDriveCoverUrl('');
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-slate-400 hover:text-white text-[11px] font-bold border border-white/10 transition-colors"
+                    >
+                      Reset Photo
+                    </button>
+                  </div>
                 </div>
 
-                {/* 2. DIGITAL E-BOOK FILE UPLOAD (PC / Google Drive / URL) */}
-                <div className="p-5 rounded-2xl bg-white/[0.03] border border-cyan-500/30 space-y-4">
+                {/* 2. DIGITAL E-BOOK FILE UPLOAD (PC / Device / Google Drive / URL) */}
+                <div className="p-6 rounded-3xl bg-white/[0.03] border border-cyan-500/30 space-y-5">
                   <div className="flex items-center justify-between">
-                    <label className="block text-xs font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-2">
-                      <FileUp className="w-4 h-4 text-cyan-400" />
-                      <span>Digital E-Book File (EPUB, PDF, Document)</span>
-                    </label>
+                    <div>
+                      <label className="block text-xs font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-2">
+                        <FileUp className="w-4 h-4 text-cyan-400" />
+                        <span>Digital E-Book File (EPUB, PDF, Document)</span>
+                      </label>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Attach digital file from your PC, mobile device, or paste a Google Drive share link.
+                      </p>
+                    </div>
                   </div>
 
                   {/* Digital File Source Tabs */}
-                  <div className="grid grid-cols-3 gap-2 p-1 bg-[#090D16] rounded-xl text-xs font-bold border border-white/10">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-1.5 bg-[#090D16] rounded-2xl text-xs font-bold border border-white/10">
                     <button
                       type="button"
                       onClick={() => setFileSourceTab('pc_upload')}
-                      className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                      className={`py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-2 ${
                         fileSourceTab === 'pc_upload'
-                          ? 'bg-cyan-600 text-white shadow'
+                          ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-600/30'
                           : 'text-slate-400 hover:text-white'
                       }`}
                     >
-                      <HardDrive className="w-3.5 h-3.5" />
+                      <Laptop className="w-3.5 h-3.5" />
                       <span>From PC</span>
                     </button>
 
                     <button
                       type="button"
-                      onClick={() => setFileSourceTab('google_drive')}
-                      className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
-                        fileSourceTab === 'google_drive'
-                          ? 'bg-cyan-600 text-white shadow'
+                      onClick={() => setFileSourceTab('device_upload')}
+                      className={`py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-2 ${
+                        fileSourceTab === 'device_upload'
+                          ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-600/30'
                           : 'text-slate-400 hover:text-white'
                       }`}
                     >
-                      <Globe className="w-3.5 h-3.5" />
+                      <Smartphone className="w-3.5 h-3.5" />
+                      <span>From Device</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setFileSourceTab('google_drive')}
+                      className={`py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-2 ${
+                        fileSourceTab === 'google_drive'
+                          ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-600/30'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <Cloud className="w-3.5 h-3.5" />
                       <span>Google Drive</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setFileSourceTab('web_url')}
-                      className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                      className={`py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-2 ${
                         fileSourceTab === 'web_url'
-                          ? 'bg-cyan-600 text-white shadow'
+                          ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-600/30'
                           : 'text-slate-400 hover:text-white'
                       }`}
                     >
@@ -729,61 +1020,98 @@ export default function AdminPage() {
 
                   {/* Option A: Upload File from PC */}
                   {fileSourceTab === 'pc_upload' && (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <input
-                        ref={bookFileInputRef}
+                        ref={bookPcFileInputRef}
                         type="file"
                         accept=".epub,.pdf,.mobi,.txt,.doc,.docx"
-                        onChange={handleBookFileUpload}
+                        onChange={handleBookPcUpload}
                         className="hidden"
                       />
                       <div
-                        onClick={() => bookFileInputRef.current?.click()}
-                        className="border-2 border-dashed border-cyan-500/40 hover:border-cyan-400 rounded-2xl p-5 text-center cursor-pointer bg-[#090D16]/50 hover:bg-[#090D16] transition-all space-y-1.5"
+                        onClick={() => bookPcFileInputRef.current?.click()}
+                        className="border-2 border-dashed border-cyan-500/40 hover:border-cyan-400 rounded-2xl p-6 text-center cursor-pointer bg-[#090D16]/60 hover:bg-[#090D16] transition-all group"
                       >
-                        <FileText className="w-8 h-8 text-cyan-400 mx-auto" />
+                        <Laptop className="w-9 h-9 text-cyan-400 mx-auto group-hover:scale-110 transition-transform mb-2" />
                         <p className="text-xs font-bold text-white">
-                          Select e-book file (.epub, .pdf, .mobi) from your system
+                          Select e-book file (.epub, .pdf, .mobi) from your PC
                         </p>
-                        <p className="text-[11px] text-slate-400">
+                        <p className="text-[11px] text-slate-400 mt-1">
                           Automatically calculates volume size and links to purchase receipts.
                         </p>
-                        {uploadedBookFileName && (
-                          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 text-xs font-mono font-bold mt-2 border border-cyan-500/30">
+                        {uploadedBookFileName && fileSourceTab === 'pc_upload' && (
+                          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 text-xs font-mono font-bold mt-3 border border-cyan-500/30">
                             <Check className="w-3.5 h-3.5 text-cyan-400" />
-                            <span>{uploadedBookFileName} ({uploadedBookFileSizeMb} MB)</span>
+                            <span>PC File: {uploadedBookFileName} ({uploadedBookFileSizeMb} MB)</span>
                           </div>
                         )}
                       </div>
                     </div>
                   )}
 
-                  {/* Option B: Google Drive E-Book Share Link */}
-                  {fileSourceTab === 'google_drive' && (
-                    <div className="space-y-2">
+                  {/* Option B: Upload File from Device */}
+                  {fileSourceTab === 'device_upload' && (
+                    <div className="space-y-3">
                       <input
-                        type="url"
-                        value={driveBookUrl}
-                        onChange={(e) => setDriveBookUrl(e.target.value)}
-                        placeholder="Google Drive sharing URL for the digital book file..."
-                        className="w-full px-4 py-2.5 text-xs bg-[#090D16] border border-white/10 rounded-xl outline-none focus:border-cyan-500 text-white font-mono placeholder:text-slate-600"
+                        ref={bookDeviceFileInputRef}
+                        type="file"
+                        accept=".epub,.pdf,.mobi,.txt,.doc,.docx"
+                        onChange={handleBookDeviceUpload}
+                        className="hidden"
                       />
+                      <div
+                        onClick={() => bookDeviceFileInputRef.current?.click()}
+                        className="border-2 border-dashed border-cyan-500/40 hover:border-cyan-400 rounded-2xl p-6 text-center cursor-pointer bg-[#090D16]/60 hover:bg-[#090D16] transition-all group"
+                      >
+                        <Smartphone className="w-9 h-9 text-cyan-400 mx-auto group-hover:scale-110 transition-transform mb-2" />
+                        <p className="text-xs font-bold text-white">
+                          Select e-book file from Device storage / Files app
+                        </p>
+                        <p className="text-[11px] text-slate-400 mt-1">
+                          Picks digital documents directly from your device file manager.
+                        </p>
+                        {uploadedBookFileName && fileSourceTab === 'device_upload' && (
+                          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 text-xs font-mono font-bold mt-3 border border-cyan-500/30">
+                            <Check className="w-3.5 h-3.5 text-cyan-400" />
+                            <span>Device File: {uploadedBookFileName} ({uploadedBookFileSizeMb} MB)</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Option C: Google Drive E-Book Share Link */}
+                  {fileSourceTab === 'google_drive' && (
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <input
+                          type="url"
+                          value={driveBookUrl}
+                          onChange={(e) => setDriveBookUrl(e.target.value)}
+                          placeholder="Paste Google Drive sharing URL for the digital book file..."
+                          className="w-full px-4 py-3 pl-11 text-xs bg-[#090D16] border border-white/10 rounded-xl outline-none focus:border-cyan-500 text-white font-mono placeholder:text-slate-600"
+                        />
+                        <Cloud className="w-4 h-4 text-cyan-400 absolute left-3.5 top-3.5" />
+                      </div>
                       <p className="text-[11px] text-slate-400">
-                        Attached to instant download receipt so buyers can retrieve this file.
+                        💡 Buyers will receive this direct link to download the e-book from Google Drive upon checkout.
                       </p>
                     </div>
                   )}
 
-                  {/* Option C: Direct Web URL */}
+                  {/* Option D: Direct Web URL */}
                   {fileSourceTab === 'web_url' && (
-                    <div className="space-y-2">
-                      <input
-                        type="url"
-                        value={webBookUrl}
-                        onChange={(e) => setWebBookUrl(e.target.value)}
-                        placeholder="Direct download URL (e.g. S3, Dropbox, cloud storage)..."
-                        className="w-full px-4 py-2.5 text-xs bg-[#090D16] border border-white/10 rounded-xl outline-none focus:border-cyan-500 text-white font-mono placeholder:text-slate-600"
-                      />
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <input
+                          type="url"
+                          value={webBookUrl}
+                          onChange={(e) => setWebBookUrl(e.target.value)}
+                          placeholder="Direct download URL (e.g. AWS S3, Cloudflare R2, Dropbox)..."
+                          className="w-full px-4 py-3 pl-11 text-xs bg-[#090D16] border border-white/10 rounded-xl outline-none focus:border-cyan-500 text-white font-mono placeholder:text-slate-600"
+                        />
+                        <Globe className="w-4 h-4 text-cyan-400 absolute left-3.5 top-3.5" />
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1233,6 +1561,241 @@ export default function AdminPage() {
               </table>
             </div>
 
+          </div>
+        )}
+
+        {/* Studio Cover Photo Customization Modal */}
+        {isBannerModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md">
+            <div className="relative w-full max-w-2xl bg-[#0F1422] border border-purple-500/30 rounded-3xl shadow-2xl overflow-hidden p-6 sm:p-8 space-y-6">
+              
+              {/* Modal Header */}
+              <div className="flex items-center justify-between pb-4 border-b border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-purple-500/20 text-purple-300 flex items-center justify-center border border-purple-500/30">
+                    <Camera className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-serif font-bold text-white">Customize Studio & Store Cover Photo</h3>
+                    <p className="text-xs text-slate-400">Upload a cover banner from PC, mobile device, or Google Drive</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsBannerModalOpen(false)}
+                  className="p-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-slate-400 hover:text-white transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Source Selection Tabs */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-1.5 bg-[#090D16] rounded-2xl text-xs font-bold border border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setBannerSourceTab('pc_upload')}
+                  className={`py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-2 ${
+                    bannerSourceTab === 'pc_upload'
+                      ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Laptop className="w-3.5 h-3.5" />
+                  <span>From PC</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setBannerSourceTab('device_upload')}
+                  className={`py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-2 ${
+                    bannerSourceTab === 'device_upload'
+                      ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Smartphone className="w-3.5 h-3.5" />
+                  <span>From Device</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setBannerSourceTab('google_drive')}
+                  className={`py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-2 ${
+                    bannerSourceTab === 'google_drive'
+                      ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Cloud className="w-3.5 h-3.5" />
+                  <span>Google Drive</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setBannerSourceTab('presets')}
+                  className={`py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-2 ${
+                    bannerSourceTab === 'presets'
+                      ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Palette className="w-3.5 h-3.5" />
+                  <span>Aesthetic Themes</span>
+                </button>
+              </div>
+
+              {/* Banner Mode 1: From PC */}
+              {bannerSourceTab === 'pc_upload' && (
+                <div className="space-y-3">
+                  <input
+                    ref={bannerPcInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    onChange={handleBannerPcUpload}
+                    className="hidden"
+                  />
+                  <div
+                    onClick={() => bannerPcInputRef.current?.click()}
+                    className="border-2 border-dashed border-purple-500/40 hover:border-purple-400 rounded-2xl p-7 text-center cursor-pointer bg-[#090D16]/60 hover:bg-[#090D16] transition-all group"
+                  >
+                    <Laptop className="w-10 h-10 text-purple-400 mx-auto group-hover:scale-110 transition-transform mb-2" />
+                    <p className="text-sm font-bold text-white">
+                      Select panoramic banner image from your PC / Mac
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Recommended ratio 16:9 or 21:9 (PNG, JPG, WebP)
+                    </p>
+                    {uploadedBannerFileName && (
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-mono font-bold mt-3 border border-emerald-500/30">
+                        <Check className="w-3.5 h-3.5" /> Selected: {uploadedBannerFileName}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Banner Mode 2: From Device */}
+              {bannerSourceTab === 'device_upload' && (
+                <div className="space-y-3">
+                  <input
+                    ref={bannerDeviceInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleBannerDeviceUpload}
+                    className="hidden"
+                  />
+                  <div
+                    onClick={() => bannerDeviceInputRef.current?.click()}
+                    className="border-2 border-dashed border-purple-500/40 hover:border-purple-400 rounded-2xl p-7 text-center cursor-pointer bg-[#090D16]/60 hover:bg-[#090D16] transition-all group"
+                  >
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Smartphone className="w-9 h-9 text-purple-400 group-hover:scale-110 transition-transform" />
+                      <Camera className="w-8 h-8 text-cyan-400 group-hover:scale-110 transition-transform" />
+                    </div>
+                    <p className="text-sm font-bold text-white">
+                      Tap to take photo or choose from device photo library
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Direct access to your camera roll, albums, and storage
+                    </p>
+                    {uploadedBannerFileName && (
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-mono font-bold mt-3 border border-emerald-500/30">
+                        <Check className="w-3.5 h-3.5" /> Device Photo Uploaded: {uploadedBannerFileName}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Banner Mode 3: Google Drive */}
+              {bannerSourceTab === 'google_drive' && (
+                <div className="space-y-3">
+                  <div className="relative">
+                    <input
+                      type="url"
+                      value={driveBannerUrl}
+                      onChange={(e) => {
+                        setDriveBannerUrl(e.target.value);
+                        if (e.target.value.trim()) {
+                          const directUrl = convertGoogleDriveUrl(e.target.value);
+                          saveStudioCoverPhoto(directUrl);
+                        }
+                      }}
+                      placeholder="Paste Google Drive share link for banner image..."
+                      className="w-full px-4 py-3 pl-11 text-xs bg-[#090D16] border border-white/10 rounded-xl outline-none focus:border-purple-500 text-white font-mono placeholder:text-slate-600"
+                    />
+                    <Cloud className="w-4 h-4 text-purple-400 absolute left-3.5 top-3.5" />
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    💡 Make sure sharing is set to &ldquo;Anyone with the link can view&rdquo;.
+                  </p>
+                </div>
+              )}
+
+              {/* Banner Mode 4: Aesthetic Presets */}
+              {bannerSourceTab === 'presets' && (
+                <div className="grid grid-cols-2 gap-3">
+                  {STUDIO_BANNER_PRESETS.map((preset, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => saveStudioCoverPhoto(preset.url)}
+                      className={`relative rounded-2xl overflow-hidden border p-3 text-left transition-all group ${
+                        studioCoverPhoto === preset.url
+                          ? 'border-purple-500 ring-2 ring-purple-500/30'
+                          : 'border-white/10 hover:border-white/30'
+                      }`}
+                    >
+                      <div
+                        className="h-20 w-full rounded-xl bg-cover bg-center mb-2"
+                        style={{ backgroundImage: `url(${preset.url})` }}
+                      />
+                      <span className="text-xs font-bold text-white block truncate">{preset.name}</span>
+                      {studioCoverPhoto === preset.url && (
+                        <span className="inline-flex items-center gap-1 text-[10px] text-purple-300 font-bold mt-1">
+                          <Check className="w-3 h-3" /> Active Cover
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Storefront Sync Toggle */}
+              <div className="p-4 rounded-2xl bg-[#090D16] border border-white/10 flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-bold text-white block">Feature on Storefront Home Page</span>
+                  <span className="text-[11px] text-slate-400">Apply this cover banner as the storefront hero ambient backdrop</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={syncStorefrontBanner}
+                  onChange={(e) => {
+                    setSyncStorefrontBanner(e.target.checked);
+                    try {
+                      localStorage.setItem('bookforu_store_cover_photo_sync', e.target.checked ? 'true' : 'false');
+                      if (e.target.checked) {
+                        localStorage.setItem('bookforu_store_cover_photo', studioCoverPhoto);
+                      }
+                    } catch {}
+                  }}
+                  className="w-4 h-4 accent-purple-600 rounded cursor-pointer"
+                />
+              </div>
+
+              {/* Modal Actions */}
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsBannerModalOpen(false)}
+                  className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-lg shadow-purple-600/30"
+                >
+                  Done
+                </button>
+              </div>
+
+            </div>
           </div>
         )}
 

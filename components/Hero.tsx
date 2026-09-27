@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCart } from '@/context/CartContext';
 import { BOOKS } from '@/data/books';
 import { BookOpen, Sparkles, ShieldCheck, Download, Star, ArrowRight, Award, Feather } from 'lucide-react';
@@ -8,9 +8,28 @@ import { BookOpen, Sparkles, ShieldCheck, Download, Star, ArrowRight, Award, Fea
 export const Hero: React.FC = () => {
   const { openReader, openBookDetail, addToCart } = useCart();
   const spotlightBook = BOOKS[0]; // Architects of Intelligence
+  const [storeCoverPhoto, setStoreCoverPhoto] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const isSync = localStorage.getItem('bookforu_store_cover_photo_sync');
+      const customPhoto = localStorage.getItem('bookforu_store_cover_photo');
+      if (isSync === 'true' && customPhoto) {
+        setStoreCoverPhoto(customPhoto);
+      }
+    } catch {}
+  }, []);
 
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-[#F5EFE6] via-[#FAF8F5] to-[#FAF8F5] pt-12 pb-20 lg:pt-20 lg:pb-28 border-b border-[#E8DFD1]">
+      {/* Dynamic Storefront Cover Photo Backdrop if synced from Admin */}
+      {storeCoverPhoto && (
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-10 pointer-events-none mix-blend-multiply transition-opacity duration-700"
+          style={{ backgroundImage: `url(${storeCoverPhoto})` }}
+        />
+      )}
+
       {/* Background ambient luxury illumination */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full pointer-events-none opacity-40 blur-3xl -z-10">
         <div className="absolute -top-12 left-1/5 w-96 h-96 rounded-full bg-[#E5D2A6] mix-blend-multiply filter blur-3xl"></div>
